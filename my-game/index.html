@@ -25,6 +25,11 @@
     @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
     @keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
     @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+    @keyframes flapWing{0%,100%{transform:rotate(-20deg)}50%{transform:rotate(20deg)}}
+    #flappy-overlay{position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,.92);display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;backdrop-filter:blur(4px)}
+    #flappy-canvas{border-radius:16px;border:2px solid rgba(255,255,255,.1);box-shadow:0 0 40px rgba(0,194,255,.2);max-width:100%;cursor:pointer;touch-action:none}
+    #flappy-hud{font-family:'Bangers',cursive;font-size:1.1rem;color:var(--mut);letter-spacing:1px;text-align:center}
+    #flappy-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.5);border-radius:50%;width:36px;height:36px;font-size:.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
     @keyframes glowPulse{0%,100%{box-shadow:0 0 0 2px transparent}50%{box-shadow:0 0 0 3px var(--a3)}}
 
     body{background:var(--bg);color:var(--txt);font-family:'Nunito',sans-serif;min-height:100vh;overflow-x:hidden}
@@ -547,7 +552,10 @@ function buildMpLobby(){
           : `<button class="btn btn-g btn-full" style="font-size:1rem" onclick="hostStartGame()">▶ Start Game</button>`
       }
     </div>`
-            :`<div class="waiting">Waiting for host to start…</div>`}`;
+            :`<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">
+    <div class="waiting">Waiting for host to start…</div>
+    <button class="btn btn-s btn-full" onclick="openFlappy()" style="font-size:.9rem">🐦 Play Flappy Bird while you wait!</button>
+  </div>`}`;
 }
 
 function buildMpGame(){
@@ -1039,6 +1047,7 @@ function hostEndGame(){
 }
 
 function backToMenu(){
+  closeFlappy();
   if(S.peer){try{S.peer.destroy();}catch(e){}} S.peer=null;
   S.conns=[]; S.hostConn=null; S.mpPlayers=[];
   showScreen('menu');
@@ -1083,7 +1092,7 @@ function handleClientMsg(msg){
   if(msg.type==='welcome'){S.mpPlayers=msg.players;if(msg.questions)S.questions=msg.questions;if(S.screen==='mpLobby')showScreen('mpLobby');}
   if(msg.type==='players'){S.mpPlayers=msg.players;if(S.screen==='mpLobby')showScreen('mpLobby');}
   if(msg.type==='moreQs'){S.questions=msg.questions;}
-  if(msg.type==='startGame'){S.questions=msg.questions||S.questions;S.qIdx=msg.qIdx||0;S.myAnswer=null;S.mpAnsweredCount=0;showScreen('mpGame');}
+  if(msg.type==='startGame'){closeFlappy();S.questions=msg.questions||S.questions;S.qIdx=msg.qIdx||0;S.myAnswer=null;S.mpAnsweredCount=0;showScreen('mpGame');}
   if(msg.type==='ansCount'){S.mpAnsweredCount=msg.count;updateAnsBar(msg.count);}
   if(msg.type==='reveal'){
     S.mpReveal=msg.data;
@@ -1208,6 +1217,173 @@ function claimComebackCoins(){
 }
 
 /* ═══════════════════════════════════════
+   FLAPPY BIRD MINI GAME
+═══════════════════════════════════════ */
+let FB={active:false,raf:null,canvas:null,ctx:null};
+
+function openFlappy(){
+  const ov=document.getElementById('flappy-overlay');
+  if(!ov)return;
+  ov.style.display='flex';
+  FB.active=true;
+  _fbInit();
+}
+function closeFlappy(){
+  const ov=document.getElementById('flappy-overlay');
+  if(ov)ov.style.display='none';
+  FB.active=false;
+  if(FB.raf){cancelAnimationFrame(FB.raf);FB.raf=null;}
+}
+function _fbInit(){
+  const canvas=document.getElementById('flappy-canvas');
+  if(!canvas)return;
+  FB.canvas=canvas; FB.ctx=canvas.getContext('2d');
+  // Input
+  const jump=()=>{if(FB.state==='dead'){_fbReset();}else{FB.vy=-7;FB.state='playing';}};
+  canvas.onclick=jump;
+  canvas.ontouchstart=(e)=>{e.preventDefault();jump();};
+  // Only add keyboard once
+  if(!FB._keyBound){
+    document.addEventListener('keydown',e=>{if(e.code==='Space'&&FB.active){e.preventDefault();jump();}});
+    FB._keyBound=true;
+  }
+  _fbReset();
+}
+function _fbReset(){
+  const W=320,H=420;
+  FB.W=W;FB.H=H;
+  FB.birdX=80;FB.birdY=H/2;FB.vy=0;
+  FB.gravity=0.38;FB.flapPower=-7;
+  FB.pipes=[];FB.pipeTimer=0;FB.pipeGap=115;FB.pipeWidth=52;FB.pipeSpeed=2.4;
+  FB.score=0;FB.best=parseInt(localStorage.getItem('fb_best')||'0');
+  FB.state='waiting'; // waiting -> playing -> dead
+  FB.bgX=0;FB.groundX=0;
+  if(FB.raf)cancelAnimationFrame(FB.raf);
+  _fbLoop();
+}
+function _fbLoop(){
+  if(!FB.active){return;}
+  FB.raf=requestAnimationFrame(_fbLoop);
+  _fbUpdate();
+  _fbDraw();
+}
+function _fbUpdate(){
+  if(FB.state!=='playing')return;
+  // Bird physics
+  FB.vy+=FB.gravity;
+  FB.birdY+=FB.vy;
+  FB.bgX=(FB.bgX-0.5)%FB.W;
+  FB.groundX=(FB.groundX-FB.pipeSpeed*1.5)%48;
+  // Pipes
+  FB.pipeTimer++;
+  if(FB.pipeTimer>72){
+    FB.pipeTimer=0;
+    const minH=50,maxH=FB.H-FB.pipeGap-minH-60;
+    const topH=minH+Math.random()*maxH;
+    FB.pipes.push({x:FB.W+10,top:topH,scored:false});
+  }
+  for(let p of FB.pipes){
+    p.x-=FB.pipeSpeed;
+    if(!p.scored&&p.x+FB.pipeWidth<FB.birdX){p.scored=true;FB.score++;}
+  }
+  FB.pipes=FB.pipes.filter(p=>p.x>-FB.pipeWidth-10);
+  // Collisions
+  const bR=13; // bird radius
+  for(let p of FB.pipes){
+    const inX=FB.birdX+bR>p.x&&FB.birdX-bR<p.x+FB.pipeWidth;
+    if(inX&&(FB.birdY-bR<p.top||FB.birdY+bR>p.top+FB.pipeGap)){_fbDie();return;}
+  }
+  // Floor/ceiling
+  if(FB.birdY+bR>FB.H-40){FB.birdY=FB.H-40-bR;_fbDie();return;}
+  if(FB.birdY-bR<0){FB.birdY=bR;FB.vy=0;}
+}
+function _fbDie(){
+  FB.state='dead';
+  if(FB.score>FB.best){FB.best=FB.score;localStorage.setItem('fb_best',FB.score);}
+}
+function _fbDraw(){
+  const {ctx:c,W,H}=FB;
+  // Sky gradient
+  const sky=c.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#0d0d2e');sky.addColorStop(1,'#1a1a3e');
+  c.fillStyle=sky;c.fillRect(0,0,W,H);
+  // Scrolling stars/clouds bg
+  c.fillStyle='rgba(255,255,255,.06)';
+  for(let i=0;i<8;i++){
+    const sx=((FB.bgX*0.3+i*45)%W+W)%W;
+    c.beginPath();c.arc(sx,20+i*18,2,0,Math.PI*2);c.fill();
+  }
+  // Pipes
+  for(let p of FB.pipes){
+    // Top pipe
+    const g1=c.createLinearGradient(p.x,0,p.x+FB.pipeWidth,0);
+    g1.addColorStop(0,'#1a6b3c');g1.addColorStop(0.4,'#2ecc71');g1.addColorStop(1,'#1a6b3c');
+    c.fillStyle=g1;
+    c.beginPath();c.roundRect(p.x,0,FB.pipeWidth,p.top-8,4);c.fill();
+    // Top cap
+    c.fillStyle='#27ae60';
+    c.beginPath();c.roundRect(p.x-5,p.top-24,FB.pipeWidth+10,20,6);c.fill();
+    // Bottom pipe
+    const botY=p.top+FB.pipeGap;
+    c.fillStyle=g1;
+    c.beginPath();c.roundRect(p.x,botY+8,FB.pipeWidth,H-botY-48,4);c.fill();
+    // Bottom cap
+    c.fillStyle='#27ae60';
+    c.beginPath();c.roundRect(p.x-5,botY+4,FB.pipeWidth+10,20,6);c.fill();
+  }
+  // Ground
+  c.fillStyle='#2d5a1b';c.fillRect(0,H-40,W,40);
+  c.fillStyle='#3d7a26';c.fillRect(0,H-40,W,8);
+  // Ground tiles
+  c.fillStyle='#4a9030';
+  for(let i=0;i<8;i++){
+    const gx=((FB.groundX+i*48)%W+W)%W;
+    c.fillRect(gx,H-40,40,8);
+  }
+  // Bird
+  const bx=FB.birdX,by=FB.birdY;
+  const angle=Math.max(-0.5,Math.min(1.2,FB.vy*0.07));
+  c.save();c.translate(bx,by);c.rotate(angle);
+  // Body
+  c.fillStyle='#ffd60a';
+  c.beginPath();c.ellipse(0,0,14,11,0,0,Math.PI*2);c.fill();
+  // Wing
+  c.fillStyle='#ffaa00';
+  c.beginPath();c.ellipse(-4,3,8,5,FB.state==='playing'?Math.sin(Date.now()/80)*0.5:0.3,0,Math.PI*2);c.fill();
+  // Eye
+  c.fillStyle='#fff';c.beginPath();c.arc(6,-3,4,0,Math.PI*2);c.fill();
+  c.fillStyle='#1a1a2e';c.beginPath();c.arc(7,-3,2.2,0,Math.PI*2);c.fill();
+  c.fillStyle='#fff';c.beginPath();c.arc(8,-4,0.8,0,Math.PI*2);c.fill();
+  // Beak
+  c.fillStyle='#ff6b35';
+  c.beginPath();c.moveTo(12,-1);c.lineTo(18,1);c.lineTo(12,3);c.closePath();c.fill();
+  c.restore();
+  // Score
+  c.fillStyle='#fff';c.font='bold 22px Nunito,sans-serif';c.textAlign='center';
+  c.shadowColor='rgba(0,0,0,.8)';c.shadowBlur=6;
+  c.fillText(FB.score,W/2,44);c.shadowBlur=0;
+  // State overlays
+  if(FB.state==='waiting'){
+    c.fillStyle='rgba(0,0,0,.55)';c.fillRect(0,0,W,H);
+    c.fillStyle='#ffd60a';c.font='bold 26px Bangers,cursive';c.textAlign='center';
+    c.fillText('TAP TO START',W/2,H/2-16);
+    c.fillStyle='rgba(255,255,255,.5)';c.font='bold 14px Nunito,sans-serif';
+    c.fillText('Best: '+FB.best,W/2,H/2+16);
+  }
+  if(FB.state==='dead'){
+    c.fillStyle='rgba(0,0,0,.6)';c.fillRect(0,0,W,H);
+    c.fillStyle='#ff4d6d';c.font='bold 30px Bangers,cursive';c.textAlign='center';
+    c.fillText('DEAD 💀',W/2,H/2-38);
+    c.fillStyle='#ffd60a';c.font='bold 22px Bangers,cursive';
+    c.fillText('Score: '+FB.score,W/2,H/2);
+    c.fillStyle='rgba(255,255,255,.6)';c.font='bold 15px Nunito,sans-serif';
+    c.fillText('Best: '+FB.best,W/2,H/2+26);
+    c.fillStyle='#00c2ff';c.font='bold 16px Nunito,sans-serif';
+    c.fillText('Tap to play again',W/2,H/2+56);
+  }
+}
+
+/* ═══════════════════════════════════════
    BOOT
 ═══════════════════════════════════════ */
 applyTheme('void');
@@ -1217,6 +1393,14 @@ if(!localStorage.getItem('wyr_comeback_claimed')){
   setTimeout(showComebackModal, 600);
 }
 </script>
+  <!-- FLAPPY BIRD MINI GAME -->
+  <div id="flappy-overlay">
+    <button id="flappy-close" onclick="closeFlappy()" title="Close">✕</button>
+    <div style="font-family:'Bangers',cursive;font-size:1.6rem;letter-spacing:2px;color:var(--a2)">🐦 FLAPPY WAIT</div>
+    <canvas id="flappy-canvas" width="320" height="420"></canvas>
+    <div id="flappy-hud">TAP / SPACE to flap · kills time while waiting</div>
+  </div>
+
   <!-- FORGOT PASSWORD MODAL -->
   <div id="forgot-modal" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px">
     <div style="background:var(--bg,#0d0d1a);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:28px;max-width:380px;width:100%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;align-items:center;gap:14px;animation:fadeUp .3s ease">
