@@ -1239,7 +1239,7 @@ function _fbInit(){
   if(!canvas)return;
   FB.canvas=canvas; FB.ctx=canvas.getContext('2d');
   // Input
-  const jump=()=>{if(FB.state==='dead'){_fbReset();}else{FB.vy=-7;FB.state='playing';}};
+  const jump=()=>{if(FB.state==='dead'){_fbReset();}else{FB.vy=-5.5;FB.state='playing';}};
   canvas.onclick=jump;
   canvas.ontouchstart=(e)=>{e.preventDefault();jump();};
   // Only add keyboard once
@@ -1253,8 +1253,8 @@ function _fbReset(){
   const W=320,H=420;
   FB.W=W;FB.H=H;
   FB.birdX=80;FB.birdY=H/2;FB.vy=0;
-  FB.gravity=0.38;FB.flapPower=-7;
-  FB.pipes=[];FB.pipeTimer=0;FB.pipeGap=115;FB.pipeWidth=52;FB.pipeSpeed=2.4;
+  FB.gravity=0.22;FB.flapPower=-5.5;
+  FB.pipes=[];FB.pipeTimer=0;FB.pipeGap=145;FB.pipeWidth=52;FB.pipeSpeed=1.6;
   FB.score=0;FB.best=parseInt(localStorage.getItem('fb_best')||'0');
   FB.state='waiting'; // waiting -> playing -> dead
   FB.bgX=0;FB.groundX=0;
@@ -1276,7 +1276,7 @@ function _fbUpdate(){
   FB.groundX=(FB.groundX-FB.pipeSpeed*1.5)%48;
   // Pipes
   FB.pipeTimer++;
-  if(FB.pipeTimer>72){
+  if(FB.pipeTimer>110){
     FB.pipeTimer=0;
     const minH=50,maxH=FB.H-FB.pipeGap-minH-60;
     const topH=minH+Math.random()*maxH;
