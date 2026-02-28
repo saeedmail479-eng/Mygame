@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta name="google-site-verification" content="apptJs6j2dGba_YRiUBj2ueaHNvBHNshKIMn5cY7pyU" />
+<head>
+  <meta name="google-site-verification" content="apptJs6j2dGba_YRiUBj2ueaHNvBHNshKIMn5cY7pyU" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Would You Rather? — Multiplayer</title>
@@ -823,6 +824,7 @@ function instantLogin(u){
   showToast('Welcome back, '+u+'! 👋');
   syncGlobalStats(acc);
   showScreen('menu'); generateQs();
+  _checkComebackPending();
 }
 function setLErr(msg){const el=document.getElementById('lerr');if(el){el.textContent=msg;el.style.display=msg?'block':'none';}}
 function shakeEl(id){const el=document.getElementById(id);if(!el)return;el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),400);}
@@ -844,15 +846,24 @@ function handleAuth(){
     showToast('Welcome '+name+'! You got 100 free coins 🪙'); spawnConfetti('#ffd60a');
     syncGlobalStats(acc);
     showScreen('menu'); generateQs();
+    _checkComebackPending();
   } else {
     if(!existing){setLErr('Account not found — sign up instead.');return;}
     if(existing.password!==pw){setLErr('Wrong password! 🔒');shakeEl('lp');return;}
     S.account=existing; applyTheme(existing.themeId);
     S.questions=[]; syncGlobalStats(existing); showScreen('menu'); generateQs();
+    _checkComebackPending();
   }
 }
 
 function switchAccount(){S.account=null;showScreen('login');}
+
+function _checkComebackPending(){
+  if(localStorage.getItem('wyr_comeback_pending')==='1' && S.account){
+    localStorage.removeItem('wyr_comeback_pending');
+    setTimeout(()=>awardCoins(100,'comeback compensation 🙏'),800);
+  }
+}
 
 function deleteAccount(username){
   if(!confirm('Delete account "'+username+'"? This cannot be undone!')) return;
@@ -1311,10 +1322,51 @@ function setMpErr(msg){
 }
 
 /* ═══════════════════════════════════════
+   COMEBACK MODAL
+═══════════════════════════════════════ */
+function showComebackModal(){
+  const el=document.getElementById('comeback-modal');
+  if(el) el.style.display='flex';
+}
+function hideComebackModal(){
+  const el=document.getElementById('comeback-modal');
+  if(el) el.style.display='none';
+}
+function claimComebackCoins(){
+  localStorage.setItem('wyr_comeback_claimed','1');
+  hideComebackModal();
+  if(S.account){
+    awardCoins(100,'comeback compensation 🙏');
+  } else {
+    // Store pending coins — award on next login
+    localStorage.setItem('wyr_comeback_pending','1');
+    showToast('Coins will be added when you log in! 🪙');
+  }
+}
+
+/* ═══════════════════════════════════════
    BOOT
 ═══════════════════════════════════════ */
 applyTheme('void');
 showScreen('login');
+// Show comeback modal only once ever
+if(!localStorage.getItem('wyr_comeback_claimed')){
+  setTimeout(showComebackModal, 600);
+}
 </script>
+  <!-- COMEBACK MODAL -->
+  <div id="comeback-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--bg, #0d0d1a);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:32px 28px;max-width:380px;width:100%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;align-items:center;gap:16px;animation:fadeUp .35s ease">
+      <div style="font-size:3.2rem">🙏</div>
+      <div style="font-size:1.6rem;font-weight:900;color:var(--txt, #fff);line-height:1.2">Big sorry from Saeed</div>
+      <div style="font-size:.92rem;color:rgba(255,255,255,.55);font-weight:600;line-height:1.6">Sorry for the inconvenience but we are back! Have fun :D</div>
+      <button id="comeback-btn" onclick="claimComebackCoins()" style="width:100%;padding:16px;background:linear-gradient(135deg,var(--a3,#ffd60a),#ffaa00);color:#000;font-weight:900;font-size:1rem;border:none;border-radius:14px;cursor:pointer;margin-top:4px;transition:transform .12s,box-shadow .12s;box-shadow:0 4px 20px rgba(255,214,10,.35)"
+        onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 28px rgba(255,214,10,.5)'"
+        onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(255,214,10,.35)'">
+        🪙 Claim 100 Coins Compensation
+      </button>
+      <div style="font-size:.72rem;color:rgba(255,255,255,.25);font-weight:600">Only available once per device</div>
+    </div>
+  </div>
 </body>
 </html>
