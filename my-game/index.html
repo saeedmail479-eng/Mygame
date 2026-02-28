@@ -223,7 +223,6 @@ const ICONS = {
 };
 const FREE_ICONS = ["fox","frog","unicorn","panda","tiger","penguin"];
 
-
 /* ═══════════════════════════════════════
    STATE
 ═══════════════════════════════════════ */
@@ -246,104 +245,8 @@ function loadAcc(u){try{const r=localStorage.getItem('acc:'+u);return r?JSON.par
 function getAllUsers(){const u=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('acc:'))u.push(k.slice(4));}return u;}
 function mkAcc(u,pw){return{username:u,password:pw,coins:100,iconId:'fox',themeId:'void',ownedIcons:[...FREE_ICONS],ownedThemes:['void'],gamesPlayed:0,questionsAnswered:0,majorityWins:0,totalCoinsEarned:100};}
 
-/* ═══════════════════════════════════════
-   GLOBAL LEADERBOARD — Supabase REST API
-   Free hosted Postgres. Every account on
-   every device shows up in one shared board.
-   ─────────────────────────────────────────
-   SETUP (one time, 2 minutes):
-   1. Go to supabase.com → New project (free)
-   2. Go to SQL Editor → run this once:
-      CREATE TABLE players (
-        username TEXT PRIMARY KEY,
-        coins INT DEFAULT 0,
-        majority_wins INT DEFAULT 0,
-        questions_answered INT DEFAULT 0,
-        games_played INT DEFAULT 0,
-        emoji TEXT DEFAULT '🦊',
-        updated_at TIMESTAMPTZ DEFAULT now()
-      );
-      ALTER TABLE players ENABLE ROW LEVEL SECURITY;
-      CREATE POLICY "public read" ON players FOR SELECT USING (true);
-      CREATE POLICY "public write" ON players FOR INSERT WITH CHECK (true);
-      CREATE POLICY "public update" ON players FOR UPDATE USING (true);
-   3. Go to Settings → API → copy URL and anon key below
-═══════════════════════════════════════ */
-const SB_URL   = 'https://jbjwvuhsgnctcuhzdimg.supabase.co';
-const SB_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impiand2dWhzZ25jdGN1aHpkaW1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyODM0MjEsImV4cCI6MjA4Nzg1OTQyMX0._bPujuPPWIn4Ol4LwaQXUSCpT-rSkDeeuC-lftrkouA';
-
-const _sbReady = ()=> SB_URL.startsWith('https://');
-
-async function syncGlobalStats(acc){
-  if(!acc||!_sbReady()) return;
-  try{
-    const res = await fetch(SB_URL+'/rest/v1/players', {
-      method: 'POST',
-      headers: {
-        'apikey': SB_KEY,
-        'Authorization': 'Bearer '+SB_KEY,
-        'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates'
-      },
-      body: JSON.stringify({
-        username: acc.username,
-        coins: acc.coins||0,
-        majority_wins: acc.majorityWins||0,
-        questions_answered: acc.questionsAnswered||0,
-        games_played: acc.gamesPlayed||0,
-        emoji: ICONS[acc.iconId]?.e||'🦊',
-        updated_at: new Date().toISOString()
-      })
-    });
-    if(!res.ok){
-      const err = await res.text();
-      console.warn('[LB sync failed]', res.status, err);
-    }
-  }catch(e){ console.warn('[LB sync error]', e); }
-}
-
+function syncGlobalStats(){}
 function mergeLbEntry(){}
-
-async function loadGlobalLeaderboard(){
-  const players = {};
-  getAllUsers().map(u=>loadAcc(u)).filter(Boolean).forEach(u=>{
-    players[u.username] = {
-      username:u.username, coins:u.coins||0,
-      majorityWins:u.majorityWins||0, questionsAnswered:u.questionsAnswered||0,
-      gamesPlayed:u.gamesPlayed||0, emoji:ICONS[u.iconId]?.e||'🦊'
-    };
-  });
-  if(!_sbReady()) return Object.values(players);
-  try{
-    const res = await fetch(
-      SB_URL+'/rest/v1/players?select=*&order=coins.desc&limit=200',
-      { headers:{ 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY } }
-    );
-    if(!res.ok){
-      S.sbTableMissing = true;
-      return Object.values(players);
-    }
-    const rows = await res.json();
-    if(!Array.isArray(rows)){ S.sbTableMissing=true; return Object.values(players); }
-    S.sbTableMissing = false;
-    rows.forEach(r=>{
-      if(!r||!r.username) return;
-      if(!players[r.username] || (r.coins||0) >= (players[r.username].coins||0)){
-        players[r.username] = {
-          username: r.username,
-          coins: r.coins||0,
-          majorityWins: r.majority_wins||0,
-          questionsAnswered: r.questions_answered||0,
-          gamesPlayed: r.games_played||0,
-          emoji: r.emoji||'🦊'
-        };
-      }
-    });
-  }catch(e){
-    S.sbTableMissing = true;
-  }
-  return Object.values(players);
-}
 
 /* ═══════════════════════════════════════
    THEME
@@ -369,7 +272,7 @@ function showToast(msg){
   clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),2600);
 }
 function awardCoins(amt,reason){
-  S.account.coins+=amt; S.account.totalCoinsEarned+=amt; saveAcc(S.account); syncGlobalStats(S.account);
+  S.account.coins+=amt; S.account.totalCoinsEarned+=amt; saveAcc(S.account);
   const el=document.getElementById('coins-el');
   el.textContent='+'+amt+' 🪙 '+reason;
   el.className=''; void el.offsetWidth; el.className='fly';
@@ -398,31 +301,15 @@ function cssVar(v){return getComputedStyle(document.documentElement).getProperty
    SCREEN ROUTER
 ═══════════════════════════════════════ */
 function showScreen(name){
-  if(name!=='leaderboard')S.globalLbLoaded=false;
   S.screen=name;
   if(S.account)applyTheme(S.account.themeId);
   const builders={
     login:buildLogin, menu:buildMenu, shop:buildShop, solo:buildSolo, soloGameover:buildSoloGameover,
     mpSetup:buildMpSetup, mpLobby:buildMpLobby, mpGame:buildMpGame,
-    mpReveal:buildMpReveal, mpGameover:buildMpGameover, leaderboard:buildLeaderboard
+    mpReveal:buildMpReveal, mpGameover:buildMpGameover
   };
   document.getElementById('root').innerHTML='<div class="wrap">'+(builders[name]?builders[name]():'')+'</div>';
   updateChatFab(); window.scrollTo(0,0); afterRender(name);
-  if(name==='leaderboard'&&!S.globalLbLoading&&!S.globalLbLoaded){
-    S.globalLbLoading=true;
-    loadGlobalLeaderboard().then(data=>{
-      S.globalLbData=data||[];
-      S.globalLbLoading=false;
-      S.globalLbLoaded=true;
-      if(S.screen==='leaderboard'){
-        const root=document.getElementById('root');
-        if(root)root.innerHTML='<div class="wrap">'+buildLeaderboard()+'</div>';
-      }
-    }).catch(()=>{
-      S.globalLbLoading=false;
-      S.globalLbLoaded=true;
-    });
-  }
 }
 
 function afterRender(n){
@@ -446,59 +333,6 @@ function afterRender(n){
 /* ═══════════════════════════════════════
    LEADERBOARD
 ═══════════════════════════════════════ */
-function buildLeaderboard(){
-  const lbTab=S.lbTab||'coins';
-  const allUsers=S.globalLbData||[];
-  const byCoins=[...allUsers].sort((a,b)=>(b.coins||0)-(a.coins||0)).slice(0,20);
-  const byMajority=[...allUsers].sort((a,b)=>(b.majorityWins||0)-(a.majorityWins||0)).slice(0,20);
-  const byAnswered=[...allUsers].sort((a,b)=>(b.questionsAnswered||0)-(a.questionsAnswered||0)).slice(0,20);
-  const list=lbTab==='coins'?byCoins:lbTab==='majority'?byMajority:byAnswered;
-  const rankIco=i=>i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
-  const rankCls=i=>i===0?'lb-rank-1':i===1?'lb-rank-2':i===2?'lb-rank-3':'';
-  const rows=list.length===0
-    ?'<div class="st" style="padding:24px 0">No global players yet — be the first! 🎮</div>'
-    :list.map((u,i)=>{
-      const isMe=u.username===S.account?.username;
-      const val=lbTab==='coins'?u.coins:lbTab==='majority'?u.majorityWins:u.questionsAnswered;
-      const sub=lbTab==='coins'?'🪙 coins':lbTab==='majority'?'🎯 majority wins':'✅ answered';
-      return`<div class="lb-row${isMe?' lb-me':''}">
-        <div class="lb-rank ${rankCls(i)}">${rankIco(i)}</div>
-        <div class="lb-ico">${u.emoji||ICONS[u.iconId]?.e||'🦊'}</div>
-        <div class="lb-name">${escHtml(u.username)}${isMe?' <span style="font-size:.65rem;color:var(--a3);font-weight:700"> YOU</span>':''}</div>
-        <div style="text-align:right"><div class="lb-val">${(val||0).toLocaleString()}</div><div class="lb-sub">${sub}</div></div>
-      </div>`;
-    }).join('');
-  const myRankList=[...allUsers].sort((a,b)=>lbTab==='coins'?(b.coins||0)-(a.coins||0):lbTab==='majority'?(b.majorityWins||0)-(a.majorityWins||0):(b.questionsAnswered||0)-(a.questionsAnswered||0));
-  const myRank=myRankList.findIndex(u=>u.username===S.account?.username);
-  const myRankTxt=myRank>=0?`🏅 You're ranked #${myRank+1} out of ${allUsers.length} players`:'Play to appear on the global board!';
-  const isLoading=S.globalLbLoading;
-  return`
-  <button class="back-btn" onclick="showScreen('menu')">← Back</button>
-  <div class="title" style="font-size:2.8rem">🏆 Leaderboard</div>
-  ${S.sbTableMissing?`<div style="background:rgba(255,77,109,.08);border:1px solid rgba(255,77,109,.25);border-radius:12px;padding:13px 15px;font-size:.76rem;color:#ff8fab;font-weight:700;line-height:1.8;text-align:center">
-    ⚠️ <strong>Supabase table not found.</strong><br>
-    <span style="color:var(--mut);font-weight:600">Go to your Supabase project → <strong style="color:var(--a2)">SQL Editor</strong> → paste and run this:</span><br>
-    <div onclick="navigator.clipboard?.writeText(this.dataset.sql);this.textContent='✓ Copied!';setTimeout(()=>this.textContent='📋 Copy SQL',1500)" data-sql="CREATE TABLE players (username TEXT PRIMARY KEY, coins INT DEFAULT 0, majority_wins INT DEFAULT 0, questions_answered INT DEFAULT 0, games_played INT DEFAULT 0, emoji TEXT DEFAULT '🦊', updated_at TIMESTAMPTZ DEFAULT now()); ALTER TABLE players ENABLE ROW LEVEL SECURITY; CREATE POLICY \"public read\" ON players FOR SELECT USING (true); CREATE POLICY \"public write\" ON players FOR INSERT WITH CHECK (true); CREATE POLICY \"public update\" ON players FOR UPDATE USING (true);"
-      style="margin-top:8px;background:rgba(0,194,255,.12);border:1px solid rgba(0,194,255,.25);border-radius:8px;padding:7px 14px;color:var(--a2);cursor:pointer;font-size:.75rem;font-weight:800;display:inline-block">
-      📋 Copy SQL
-    </div>
-  </div>`:''}
-  ${!_sbReady()?`<div style="background:rgba(255,214,10,.08);border:1px solid rgba(255,214,10,.25);border-radius:12px;padding:11px 15px;font-size:.76rem;color:var(--a3);font-weight:700;line-height:1.7;text-align:center">
-    ⚙️ Supabase not configured — showing local accounts only.
-  </div>`:''}
-  <div style="display:flex;align-items:center;justify-content:center;gap:6px;font-size:.72rem;font-weight:700;color:${isLoading?'var(--a3)':'var(--a2)'}">
-    ${isLoading?'<span class="loader"></span> Syncing global scores…':(_sbReady()&&!S.sbTableMissing?'🌍 '+allUsers.length+' players worldwide':'📱 '+allUsers.length+' local players')}
-  </div>
-  <div class="tabs" style="display:grid;grid-template-columns:1fr 1fr 1fr">
-    <button class="tab ${lbTab==='coins'?'lb-tab-on tab-on':'lb-tab-off tab-off'}" onclick="setLbTab('coins')">🪙 Coins</button>
-    <button class="tab ${lbTab==='majority'?'lb-tab-on tab-on':'lb-tab-off tab-off'}" onclick="setLbTab('majority')">🎯 Majority</button>
-    <button class="tab ${lbTab==='answered'?'lb-tab-on tab-on':'lb-tab-off tab-off'}" onclick="setLbTab('answered')">✅ Answered</button>
-  </div>
-  <div class="card" style="gap:10px">${rows}</div>
-  <div class="st st-ok" style="text-align:center">${myRankTxt}</div>`;
-}
-
-function setLbTab(t){S.lbTab=t;showScreen('leaderboard');}
 
 function buildLogin(){
   const users=getAllUsers().map(u=>loadAcc(u)).filter(Boolean);
@@ -567,6 +401,7 @@ function buildLogin(){
     <input class="inp" id="lp" type="password" placeholder="••••••••" maxlength="32"/>
     <div class="st st-err" id="lerr" style="display:none"></div>
     <button class="btn btn-p btn-full" onclick="handleAuth()">${S.isSignup?'Create Account 🎉':'Log In →'}</button>
+    ${!S.isSignup?'<button class="btn btn-ghost btn-full" style="font-size:.82rem;margin-top:-4px" onclick="showForgotPassword()">🔑 Forgot Password?</button>':''}
   </div>`:`<div class="card">
     <div class="lbl">Log In</div>
     <input class="inp" id="ln" placeholder="YourName123" maxlength="18" autocomplete="off"/>
@@ -574,6 +409,7 @@ function buildLogin(){
     <input class="inp" id="lp" type="password" placeholder="••••••••" maxlength="32"/>
     <div class="st st-err" id="lerr" style="display:none"></div>
     <button class="btn btn-p btn-full" onclick="handleAuth()">Log In →</button>
+    <button class="btn btn-ghost btn-full" style="font-size:.82rem;margin-top:-4px" onclick="showForgotPassword()">🔑 Forgot Password?</button>
   </div>`}`;
 }
 
@@ -596,7 +432,6 @@ function buildMenu(){
     <button class="menu-btn" onclick="goCreateRoom()"><div class="menu-ico">🏠</div><div class="menu-t">Create Room</div><div class="menu-s">Host multiplayer</div></button>
     <button class="menu-btn" onclick="goJoinRoom()"><div class="menu-ico">🚪</div><div class="menu-t">Join Room</div><div class="menu-s">Enter a room code</div></button>
     <button class="menu-btn" onclick="showScreen('shop')"><div class="menu-ico">🛍️</div><div class="menu-t">Shop</div><div class="menu-s">Icons &amp; themes</div></button>
-    <button class="menu-btn" onclick="showScreen('leaderboard')" style="grid-column:1/-1"><div class="menu-ico">🏆</div><div class="menu-t">Leaderboard</div><div class="menu-s">Top coins &amp; majority wins</div></button>
   </div>
   <div class="stats-row">
     ${[['🎮',a.gamesPlayed,'Games'],['✅',a.questionsAnswered,'Answered'],['🏆',a.majorityWins,'Majority']].map(([i,v,l])=>`<div class="stat-c"><div style="font-size:1.2rem">${i}</div><div class="stat-n">${v}</div><div class="stat-l">${l}</div></div>`).join('')}
@@ -799,7 +634,6 @@ function buildMpGameover(){
   `:`<div class="waiting">Waiting for host to start another round…</div>`}
   <div class="btn-row">
     <button class="btn btn-ghost" onclick="backToMenu()">← Menu</button>
-    <button class="btn btn-s" onclick="showScreen('leaderboard')">🏆 Leaderboard</button>
     <button class="btn btn-p" onclick="showScreen('shop')">🛍️ Shop</button>
   </div>`;
 }
@@ -822,7 +656,6 @@ function instantLogin(u){
   S.account=acc; applyTheme(acc.themeId);
   S.questions=[];
   showToast('Welcome back, '+u+'! 👋');
-  syncGlobalStats(acc);
   showScreen('menu'); generateQs();
   _checkComebackPending();
 }
@@ -844,14 +677,13 @@ function handleAuth(){
     const acc=mkAcc(name,pw); saveAcc(acc); S.account=acc;
     applyTheme(acc.themeId); S.questions=[];
     showToast('Welcome '+name+'! You got 100 free coins 🪙'); spawnConfetti('#ffd60a');
-    syncGlobalStats(acc);
     showScreen('menu'); generateQs();
     _checkComebackPending();
   } else {
     if(!existing){setLErr('Account not found — sign up instead.');return;}
     if(existing.password!==pw){setLErr('Wrong password! 🔒');shakeEl('lp');return;}
     S.account=existing; applyTheme(existing.themeId);
-    S.questions=[]; syncGlobalStats(existing); showScreen('menu'); generateQs();
+    S.questions=[]; showScreen('menu'); generateQs();
     _checkComebackPending();
   }
 }
@@ -992,8 +824,7 @@ function buildSoloGameover(){
   <div class="btn-row">
     <button class="btn btn-ghost btn-full" onclick="showScreen('menu')">← Menu</button>
     <button class="btn btn-p btn-full" onclick="startSolo()">▶ Play Again</button>
-  </div>
-  <button class="btn btn-s btn-full" onclick="showScreen('leaderboard')">🏆 Leaderboard</button>`;
+  </div>`;
 }
 
 /* ═══════════════════════════════════════
@@ -1110,11 +941,6 @@ function setupHostConn(conn){
   conn.on('open',()=>{
     S.conns.push(conn);
     conn.send({type:'welcome',players:S.hostPlayers,questions:S.questions});
-    // Send our full lb cache to the newcomer
-    const myCache=getLbCache();
-    Object.values(myCache).forEach(entry=>conn.send({type:'lbSync',entry}));
-    // Share our own current score
-    if(S.account) syncGlobalStats(S.account);
   });
   conn.on('data',msg=>{
     if(msg.type==='join'){
@@ -1134,7 +960,7 @@ function setupHostConn(conn){
       if(cnt>=S.hostPlayers.length)setTimeout(doReveal,700);
     }
     if(msg.type==='chat'){broadcast(msg);addChatMsg({...msg,mine:false});}
-    if(msg.type==='lbSync'){mergeLbEntry(msg.entry);broadcast({type:'lbSync',entry:msg.entry});}
+
   });
   conn.on('close',()=>{
     S.conns=S.conns.filter(c=>c!==conn);
@@ -1240,10 +1066,7 @@ function joinRoom(){
       clearTimeout(joinTimeout);
       conn.send({type:'join',name:S.account.username,emoji:ICONS[S.account.iconId].e});
       // Share our score + full lb cache with host so it spreads to all players
-      syncGlobalStats(S.account);
-      const myCache2=getLbCache();
-      Object.values(myCache2).forEach(entry=>conn.send({type:'lbSync',entry}));
-      setMpErr('');showScreen('mpLobby');
+    setMpErr('');showScreen('mpLobby');
     });
     conn.on('data',msg=>handleClientMsg(msg));
     conn.on('close',()=>showToast('Disconnected from host.'));
@@ -1278,7 +1101,7 @@ function handleClientMsg(msg){
   if(msg.type==='gameover'){S.account.gamesPlayed++;saveAcc(S.account);showScreen('mpGameover');}
   if(msg.type==='playAgain'){S.qIdx=0;S.myAnswer=null;S.questions=[];S.mpAnsweredCount=0;showScreen('mpLobby');}
   if(msg.type==='chat'){addChatMsg({...msg,mine:false});}
-  if(msg.type==='lbSync'){mergeLbEntry(msg.entry);}
+
   if(msg.type==='error'){setMpErr(msg.msg);}
 }
 
@@ -1322,6 +1145,46 @@ function setMpErr(msg){
 }
 
 /* ═══════════════════════════════════════
+   FORGOT PASSWORD
+═══════════════════════════════════════ */
+function showForgotPassword(){
+  const users=getAllUsers().map(u=>loadAcc(u)).filter(Boolean);
+  const el=document.getElementById('forgot-modal');
+  const list=document.getElementById('forgot-accounts');
+  if(!el||!list) return;
+  if(users.length===0){
+    list.innerHTML='<div style="color:rgba(255,255,255,.4);font-size:.84rem;font-weight:600;padding:10px 0">No saved accounts on this device.</div>';
+  } else {
+    list.innerHTML=users.map(u=>`
+      <button onclick="forgotLogin('${escHtml(u.username)}')" style="width:100%;display:flex;align-items:center;gap:12px;padding:13px 15px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;cursor:pointer;transition:background .2s,border-color .2s;color:var(--txt,#fff);font-family:inherit"
+        onmouseover="this.style.background='rgba(0,194,255,.1)';this.style.borderColor='rgba(0,194,255,.3)'"
+        onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <div style="font-size:1.8rem">${ICONS[u.iconId]?.e||'🦊'}</div>
+        <div style="flex:1;text-align:left">
+          <div style="font-weight:800;font-size:.95rem">${escHtml(u.username)}</div>
+          <div style="font-size:.7rem;color:rgba(255,255,255,.4);font-weight:600">🪙 ${u.coins} coins · 🏆 ${u.majorityWins} wins</div>
+        </div>
+        <div style="font-size:.8rem;color:rgba(0,194,255,.8);font-weight:800">Log In →</div>
+      </button>`).join('');
+  }
+  el.style.display='flex';
+}
+function hideForgotPassword(){
+  const el=document.getElementById('forgot-modal');
+  if(el) el.style.display='none';
+}
+function forgotLogin(username){
+  hideForgotPassword();
+  const acc=loadAcc(username);
+  if(!acc) return;
+  S.account=acc; applyTheme(acc.themeId);
+  S.questions=[];
+  showToast('Welcome back, '+username+'! 👋');
+  showScreen('menu'); generateQs();
+  _checkComebackPending();
+}
+
+/* ═══════════════════════════════════════
    COMEBACK MODAL
 ═══════════════════════════════════════ */
 function showComebackModal(){
@@ -1354,6 +1217,17 @@ if(!localStorage.getItem('wyr_comeback_claimed')){
   setTimeout(showComebackModal, 600);
 }
 </script>
+  <!-- FORGOT PASSWORD MODAL -->
+  <div id="forgot-modal" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--bg,#0d0d1a);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:28px;max-width:380px;width:100%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;align-items:center;gap:14px;animation:fadeUp .3s ease">
+      <div style="font-size:2.4rem">🔑</div>
+      <div style="font-size:1.4rem;font-weight:900;color:var(--txt,#fff)">Forgot Password?</div>
+      <div style="font-size:.84rem;color:rgba(255,255,255,.5);font-weight:600;line-height:1.6">Your saved accounts on this device — tap one to log in without a password.</div>
+      <div id="forgot-accounts" style="width:100%;display:flex;flex-direction:column;gap:10px"></div>
+      <button onclick="hideForgotPassword()" style="width:100%;padding:13px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);font-weight:800;font-size:.88rem;border-radius:12px;cursor:pointer;margin-top:4px">Cancel</button>
+    </div>
+  </div>
+
   <!-- COMEBACK MODAL -->
   <div id="comeback-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px">
     <div style="background:var(--bg, #0d0d1a);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:32px 28px;max-width:380px;width:100%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;align-items:center;gap:16px;animation:fadeUp .35s ease">
