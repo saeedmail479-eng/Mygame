@@ -200,6 +200,9 @@
     #coins-el.fly{animation:coinFly 2.8s ease forwards;background:linear-gradient(135deg,var(--a3),var(--a1));color:#fff}
     .footer{position:fixed;bottom:0;left:0;right:0;padding:9px 20px;text-align:center;font-size:.72rem;font-weight:700;color:var(--mut);z-index:100;border-top:1px solid rgba(255,255,255,.06);background:rgba(13,13,26,.88);backdrop-filter:blur(12px)}
     .footer-name{color:var(--a3)}
+    /* Password modal */
+    .pw-modal-overlay{position:fixed;inset:0;z-index:9997;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px}
+    .pw-modal{background:var(--bg);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:28px;max-width:360px;width:100%;display:flex;flex-direction:column;gap:14px;animation:fadeUp .3s ease}
   </style>
 </head>
 <body>
@@ -241,6 +244,62 @@ const ICONS = {
 const FREE_ICONS = ["fox","frog","unicorn","panda","tiger","penguin"];
 
 /* ═══════════════════════════════════════
+   SHARED SERVER STORAGE (cross-device)
+   Uses window.storage shared API so ALL
+   players on any device see the same list.
+═══════════════════════════════════════ */
+const SERVERS_STORAGE_KEY = 'pub_servers_v2';
+
+async function readPubServers() {
+  try {
+    const result = await window.storage.get(SERVERS_STORAGE_KEY, true);
+    if (!result) return [];
+    const list = JSON.parse(result.value);
+    const now = Date.now();
+    // Filter out stale entries (older than 2 minutes)
+    return list.filter(s => now - s.created < 120000);
+  } catch(e) {
+    return [];
+  }
+}
+
+async function writePubServer(entry) {
+  try {
+    let list = await readPubServers();
+    // Remove old entry for same code if exists
+    list = list.filter(s => s.code !== entry.code);
+    list.push(entry);
+    // Also prune stale
+    const now = Date.now();
+    list = list.filter(s => now - s.created < 120000);
+    await window.storage.set(SERVERS_STORAGE_KEY, JSON.stringify(list), true);
+  } catch(e) {
+    console.warn('writePubServer failed:', e);
+  }
+}
+
+async function removePubServerAsync(code) {
+  try {
+    let list = await readPubServers();
+    list = list.filter(s => s.code !== code);
+    await window.storage.set(SERVERS_STORAGE_KEY, JSON.stringify(list), true);
+  } catch(e) {}
+}
+
+async function heartbeatPubServer() {
+  if (!S.isHost || !S.roomId) return;
+  try {
+    let list = await readPubServers();
+    const idx = list.findIndex(s => s.code === S.roomId);
+    if (idx >= 0) {
+      list[idx].created = Date.now();
+      list[idx].players = S.hostPlayers.length;
+      await window.storage.set(SERVERS_STORAGE_KEY, JSON.stringify(list), true);
+    }
+  } catch(e) {}
+}
+
+/* ═══════════════════════════════════════
    STATE
 ═══════════════════════════════════════ */
 const S = {
@@ -251,14 +310,13 @@ const S = {
   hostAnswers:{}, hostPlayers:[], myPeerId:'',
   roomId:'', mpPlayers:[], mpAnsweredCount:0, mpReveal:null, mpStatus:'',
   chatOpen:false, chatMsgs:[], unread:0,
-  // Servers / lobby browser
-  serversList:[], serversTab:'browse', createPrivacy:'public', createPassword:'',
+  serversList:[], createPrivacy:'public', createPassword:'',
   joinPassword:'',
 };
 const MP_SCREENS = ['mpLobby','mpGame','mpReveal','mpGameover'];
 
 /* ═══════════════════════════════════════
-   STORAGE
+   STORAGE (local account data)
 ═══════════════════════════════════════ */
 function saveAcc(a){if(!a)return;try{localStorage.setItem('acc:'+a.username,JSON.stringify(a));localStorage.setItem('lastUser',a.username);}catch(e){}}
 function loadAcc(u){try{const r=localStorage.getItem('acc:'+u);return r?JSON.parse(r):null;}catch(e){return null;}}
@@ -315,15 +373,9 @@ function escHtml(t){return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt
 function cssVar(v){return getComputedStyle(document.documentElement).getPropertyValue('--'+v).trim();}
 
 /* ═══════════════════════════════════════
-   FIX: Clean URL so PeerJS + WebRTC works
-   even when page was opened via Google share
-   links (?si=..., #..., etc.)
+   Clean URL (share link fix)
 ═══════════════════════════════════════ */
 (function cleanUrl(){
-  // Remove query params and hash that Google / social share links add.
-  // These don't affect app logic (we use no URL params) but can cause
-  // PeerJS to fail because some STUN/TURN ICE candidates get blocked
-  // when the page origin looks like a redirect. Strip safely.
   try{
     const clean=window.location.origin+window.location.pathname;
     if(window.location.search||window.location.hash){
@@ -341,7 +393,7 @@ function showScreen(name){
   const builders={
     login:buildLogin, menu:buildMenu, shop:buildShop, solo:buildSolo, soloGameover:buildSoloGameover,
     servers:buildServers,
-    mpSetup:buildMpSetup, mpLobby:buildMpLobby, mpGame:buildMpGame,
+    mpLobby:buildMpLobby, mpGame:buildMpGame,
     mpReveal:buildMpReveal, mpGameover:buildMpGameover
   };
   document.getElementById('root').innerHTML='<div class="wrap">'+(builders[name]?builders[name]():'')+'</div>';
@@ -356,17 +408,159 @@ function afterRender(n){
     if(ln)ln.addEventListener('keydown',e=>{if(e.key==='Enter')lp?.focus();});
     if(lp)lp.addEventListener('keydown',e=>{if(e.key==='Enter')handleAuth();});
   }
-  if(n==='mpSetup'){
-    const c=document.getElementById('join-code');
-    if(c){c.addEventListener('keydown',e=>{if(e.key==='Enter')joinRoom();});
-          c.addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase();});}
-  }
   if(n==='servers'){
-    // Poll public servers every 3s while on this screen
     if(S._serverPoll)clearInterval(S._serverPoll);
     S._serverPoll=setInterval(()=>{if(S.screen==='servers')fetchPublicServers();else clearInterval(S._serverPoll);},3000);
     fetchPublicServers();
   }
+}
+
+/* ═══════════════════════════════════════
+   SERVERS SCREEN
+═══════════════════════════════════════ */
+async function fetchPublicServers(){
+  const list = await readPubServers();
+  S.serversList = list;
+  renderServersList();
+}
+
+function renderServersList(){
+  const el=document.getElementById('servers-list');
+  if(!el)return;
+  const pub=S.serversList.filter(s=>s.privacy==='public');
+  if(pub.length===0){
+    el.innerHTML='<div class="st" style="padding:20px 0;font-size:.85rem">No public servers right now — create one!</div>';
+    return;
+  }
+  el.innerHTML=pub.map(s=>`
+    <div class="server-card ${s.hasPassword?'locked':''}" onclick="joinServerFromList('${escHtml(s.code)}','${s.hasPassword?'1':'0'}')">
+      <div style="font-size:2rem">${s.hostEmoji||'🦊'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:800;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(s.name||s.host)}'s room</div>
+        <div style="display:flex;align-items:center;gap:7px;margin-top:4px;flex-wrap:wrap">
+          <span class="server-badge-pub">🌐 Public</span>
+          ${s.hasPassword?'<span style="font-size:.72rem;font-weight:700;color:var(--a3)">🔑 Password</span>':''}
+          <span class="server-players">👥 ${s.players||1} player${(s.players||1)!==1?'s':''}</span>
+        </div>
+      </div>
+      <button class="btn btn-g" style="padding:8px 16px;font-size:.82rem;flex-shrink:0">Join →</button>
+    </div>`).join('');
+}
+
+function buildServers(){
+  return `
+  <button class="back-btn" onclick="showScreen('menu')">← Back</button>
+  <div class="title" style="font-size:3rem">🌐 Servers</div>
+  <button class="btn btn-g btn-full" style="font-size:1.1rem;padding:16px" onclick="startServerCreate()">➕ Create Room</button>
+  <div class="card" style="gap:12px;padding-bottom:14px">
+    <div class="row-between">
+      <div class="sec">🌐 Public Servers</div>
+      <button onclick="fetchPublicServers()" style="background:none;border:none;color:var(--a2);font-size:.75rem;font-weight:800;cursor:pointer">↻ Refresh</button>
+    </div>
+    <div id="servers-list"><div class="st"><span class="loader"></span>Loading…</div></div>
+  </div>
+  <!-- CREATE ROOM form (hidden by default) -->
+  <div id="create-room-card" style="display:none;width:100%">
+    <div class="card" style="gap:14px">
+      <div class="lbl">Room Visibility</div>
+      <div class="privacy-row">
+        <div class="priv-opt ${S.createPrivacy==='public'?'selected-pub':''}" onclick="setPrivacy('public')">
+          <span class="priv-ico">🌐</span>
+          <span class="priv-label">Public</span>
+          <span class="priv-desc">Listed in Servers browser</span>
+        </div>
+        <div class="priv-opt ${S.createPrivacy==='private'?'selected-priv':''}" onclick="setPrivacy('private')">
+          <span class="priv-ico">🔒</span>
+          <span class="priv-label">Private</span>
+          <span class="priv-desc">Invite only via code</span>
+        </div>
+      </div>
+      <div class="lbl">Password (optional)</div>
+      <input class="inp" id="room-pw" type="password" placeholder="Leave blank for no password" maxlength="32"/>
+      <div class="st st-err" id="create-err" style="display:none"></div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="hideCreateRoom()">Cancel</button>
+        <button class="btn btn-g" style="flex:2" onclick="createRoomFromServer()">🎮 Create Room</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function startServerCreate(){
+  const el=document.getElementById('create-room-card');
+  el.style.display=el.style.display==='none'?'block':'none';
+}
+function hideCreateRoom(){document.getElementById('create-room-card').style.display='none';}
+
+function setPrivacy(v){
+  S.createPrivacy=v;
+  document.querySelectorAll('.priv-opt').forEach(el=>{
+    el.className='priv-opt';
+    if(v==='public'&&el.querySelector('.priv-label').textContent==='Public')el.classList.add('selected-pub');
+    if(v==='private'&&el.querySelector('.priv-label').textContent==='Private')el.classList.add('selected-priv');
+  });
+}
+
+function createRoomFromServer(){
+  S.createPassword=document.getElementById('room-pw')?.value||'';
+  S.isHost=true;
+  S._lobbyPrivacy=S.createPrivacy;
+  S._lobbyPassword=S.createPassword;
+  startHost();
+}
+
+// Join from public server list - show password prompt if needed
+function joinServerFromList(code, hasPw){
+  if(hasPw==='1'){
+    // Show inline password modal
+    showPwModal(code);
+  } else {
+    S.joinPassword='';
+    S.isHost=false;
+    joinRoom(code,'');
+  }
+}
+
+function showPwModal(code){
+  // Remove any existing modal
+  const ex=document.getElementById('pw-modal-el');
+  if(ex)ex.remove();
+  const div=document.createElement('div');
+  div.id='pw-modal-el';
+  div.className='pw-modal-overlay';
+  div.innerHTML=`
+    <div class="pw-modal">
+      <div style="font-size:2rem;text-align:center">🔑</div>
+      <div style="font-weight:900;font-size:1.1rem;text-align:center">Room Password</div>
+      <div style="font-size:.82rem;color:var(--mut);font-weight:600;text-align:center">This room requires a password to join.</div>
+      <input class="inp" id="modal-pw-inp" type="password" placeholder="Enter password…" maxlength="32" autofocus/>
+      <div class="st st-err" id="modal-pw-err" style="display:none"></div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="closePwModal()">Cancel</button>
+        <button class="btn btn-p" style="flex:2" onclick="submitPwModal('${escHtml(code)}')">Join →</button>
+      </div>
+    </div>`;
+  document.body.appendChild(div);
+  const inp=div.querySelector('#modal-pw-inp');
+  if(inp){inp.focus();inp.addEventListener('keydown',e=>{if(e.key==='Enter')submitPwModal(code);});}
+}
+
+function closePwModal(){
+  const el=document.getElementById('pw-modal-el');
+  if(el)el.remove();
+}
+
+function submitPwModal(code){
+  const pw=(document.getElementById('modal-pw-inp')?.value||'').trim();
+  if(!pw){
+    const err=document.getElementById('modal-pw-err');
+    if(err){err.textContent='Please enter the password.';err.style.display='block';}
+    return;
+  }
+  closePwModal();
+  S.joinPassword=pw;
+  S.isHost=false;
+  joinRoom(code,pw);
 }
 
 /* ═══════════════════════════════════════
@@ -480,180 +674,6 @@ function buildMenu(){
 }
 
 /* ═══════════════════════════════════════
-   SERVERS SCREEN
-═══════════════════════════════════════ */
-// We store public server listings in localStorage under key 'pub_servers'
-// Each entry: {id, code, host, hostEmoji, players, max, privacy, hasPassword, name, created}
-// Hosts write their entry on creation, remove on gameover/disconnect.
-
-function pubServersKey(){return 'pub_servers';}
-function readPubServers(){try{return JSON.parse(localStorage.getItem(pubServersKey())||'[]');}catch(e){return[];}}
-function writePubServer(entry){
-  let list=readPubServers().filter(s=>s.code!==entry.code);
-  list.push(entry);
-  // Prune stale (older than 2 min)
-  const now=Date.now();
-  list=list.filter(s=>now-s.created<120000);
-  localStorage.setItem(pubServersKey(),JSON.stringify(list));
-}
-function removePubServer(code){
-  let list=readPubServers().filter(s=>s.code!==code);
-  localStorage.setItem(pubServersKey(),JSON.stringify(list));
-}
-function heartbeatPubServer(){
-  if(!S.isHost||!S.roomId)return;
-  let list=readPubServers();
-  const idx=list.findIndex(s=>s.code===S.roomId);
-  if(idx>=0){list[idx].created=Date.now();list[idx].players=S.hostPlayers.length;localStorage.setItem(pubServersKey(),JSON.stringify(list));}
-}
-
-function fetchPublicServers(){
-  let list=readPubServers();
-  const now=Date.now();
-  list=list.filter(s=>now-s.created<120000); // fresh only
-  S.serversList=list;
-  renderServersList();
-}
-
-function renderServersList(){
-  const el=document.getElementById('servers-list');
-  if(!el)return;
-  const pub=S.serversList.filter(s=>s.privacy==='public');
-  if(pub.length===0){
-    el.innerHTML='<div class="st" style="padding:20px 0;font-size:.85rem">No public servers right now — create one!</div>';
-    return;
-  }
-  el.innerHTML=pub.map(s=>`
-    <div class="server-card ${s.hasPassword?'locked':''}" onclick="joinServerFromList('${escHtml(s.code)}','${s.hasPassword?'1':'0'}')">
-      <div style="font-size:2rem">${s.hostEmoji||'🦊'}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:800;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(s.name||s.host)}'s room</div>
-        <div style="display:flex;align-items:center;gap:7px;margin-top:4px;flex-wrap:wrap">
-          <span class="${s.privacy==='public'?'server-badge-pub':'server-badge-priv'}">${s.privacy==='public'?'🌐 Public':'🔒 Private'}</span>
-          ${s.hasPassword?'<span style="font-size:.72rem;font-weight:700;color:var(--a3)">🔑 Password</span>':''}
-          <span class="server-players">👥 ${s.players||1} player${(s.players||1)!==1?'s':''}</span>
-        </div>
-      </div>
-      <div style="font-family:\'Bangers\',cursive;font-size:.9rem;letter-spacing:2px;color:var(--a3);background:rgba(255,214,10,.1);border:1px solid rgba(255,214,10,.25);border-radius:8px;padding:4px 10px">${escHtml(s.code)}</div>
-    </div>`).join('');
-}
-
-function buildServers(){
-  const a=S.account;
-  return `
-  <button class="back-btn" onclick="showScreen('menu')">← Back</button>
-  <div class="title" style="font-size:3rem">🌐 Servers</div>
-  <div style="display:flex;gap:10px;width:100%">
-    <button class="btn btn-g" style="flex:1;font-size:1.05rem" onclick="startServerCreate()">➕ Create Room</button>
-    <button class="btn btn-s" style="flex:1;font-size:1.05rem" onclick="showJoinCode()">🚪 Join by Code</button>
-  </div>
-  <div class="card" style="gap:12px;padding-bottom:14px">
-    <div class="row-between">
-      <div class="sec">🌐 Public Servers</div>
-      <button onclick="fetchPublicServers()" style="background:none;border:none;color:var(--a2);font-size:.75rem;font-weight:800;cursor:pointer">↻ Refresh</button>
-    </div>
-    <div id="servers-list"><div class="st">Loading…</div></div>
-  </div>
-  <!-- JOIN BY CODE card (hidden by default) -->
-  <div id="join-code-card" style="display:none;width:100%">
-    <div class="card" style="gap:13px">
-      <div class="lbl">Enter Room Code</div>
-      <input class="inp code-inp" id="join-code" placeholder="ABC123" maxlength="6" autocomplete="off"/>
-      <div id="join-pw-wrap" style="display:none">
-        <div class="lbl" style="margin-bottom:6px">Room Password</div>
-        <input class="inp" id="join-pw" type="password" placeholder="Password" maxlength="32"/>
-      </div>
-      <div class="st st-err" id="join-err" style="display:none"></div>
-      <div class="btn-row">
-        <button class="btn btn-ghost" onclick="hideJoinCode()">Cancel</button>
-        <button class="btn btn-p" style="flex:2" onclick="joinRoomFromCode()">Connect →</button>
-      </div>
-    </div>
-  </div>
-  <!-- CREATE ROOM form (hidden by default) -->
-  <div id="create-room-card" style="display:none;width:100%">
-    <div class="card" style="gap:14px">
-      <div class="lbl">Room Visibility</div>
-      <div class="privacy-row">
-        <div class="priv-opt ${S.createPrivacy==='public'?'selected-pub':''}" onclick="setPrivacy('public')">
-          <span class="priv-ico">🌐</span>
-          <span class="priv-label">Public</span>
-          <span class="priv-desc">Listed in Servers browser</span>
-        </div>
-        <div class="priv-opt ${S.createPrivacy==='private'?'selected-priv':''}" onclick="setPrivacy('private')">
-          <span class="priv-ico">🔒</span>
-          <span class="priv-label">Private</span>
-          <span class="priv-desc">Invite only via code</span>
-        </div>
-      </div>
-      <div class="lbl">Password (optional)</div>
-      <input class="inp" id="room-pw" type="password" placeholder="Leave blank for no password" maxlength="32"/>
-      <div class="st st-err" id="create-err" style="display:none"></div>
-      <div class="btn-row">
-        <button class="btn btn-ghost" onclick="hideCreateRoom()">Cancel</button>
-        <button class="btn btn-g" style="flex:2" onclick="createRoomFromServer()">🎮 Create Room</button>
-      </div>
-    </div>
-  </div>`;
-}
-
-function startServerCreate(){
-  document.getElementById('join-code-card').style.display='none';
-  const el=document.getElementById('create-room-card');
-  el.style.display=el.style.display==='none'?'block':'none';
-}
-function hideCreateRoom(){document.getElementById('create-room-card').style.display='none';}
-function showJoinCode(){
-  document.getElementById('create-room-card').style.display='none';
-  const el=document.getElementById('join-code-card');
-  el.style.display=el.style.display==='none'?'block':'none';
-  const c=document.getElementById('join-code');
-  if(c){c.addEventListener('keydown',e=>{if(e.key==='Enter')joinRoomFromCode();});
-        c.addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase();});}
-}
-function hideJoinCode(){document.getElementById('join-code-card').style.display='none';}
-
-function setPrivacy(v){
-  S.createPrivacy=v;
-  document.querySelectorAll('.priv-opt').forEach(el=>{
-    el.className='priv-opt';
-    if(v==='public'&&el.querySelector('.priv-label').textContent==='Public')el.classList.add('selected-pub');
-    if(v==='private'&&el.querySelector('.priv-label').textContent==='Private')el.classList.add('selected-priv');
-  });
-}
-
-function createRoomFromServer(){
-  S.createPassword=document.getElementById('room-pw')?.value||'';
-  S.isHost=true;
-  // Store privacy & password in S so startHost can use them
-  S._lobbyPrivacy=S.createPrivacy;
-  S._lobbyPassword=S.createPassword;
-  startHost();
-}
-
-function joinServerFromList(code, hasPw){
-  // Show join code card pre-filled
-  showJoinCode();
-  const c=document.getElementById('join-code');
-  if(c)c.value=code.toUpperCase();
-  const pwWrap=document.getElementById('join-pw-wrap');
-  if(pwWrap)pwWrap.style.display=hasPw==='1'?'block':'none';
-}
-
-function joinRoomFromCode(){
-  const code=(document.getElementById('join-code')?.value||'').trim().toUpperCase();
-  const pw=(document.getElementById('join-pw')?.value||'').trim();
-  if(!code||code.length<4){
-    const e=document.getElementById('join-err');
-    if(e){e.textContent='Enter a valid room code.';e.style.display='block';}
-    return;
-  }
-  S.joinPassword=pw;
-  S.isHost=false;
-  joinRoom(code,pw);
-}
-
-/* ═══════════════════════════════════════
    SHOP
 ═══════════════════════════════════════ */
 function buildShop(){
@@ -728,20 +748,6 @@ function getTypeBadge(type){
     relationship:'<span style="background:rgba(255,77,140,.12);border:1px solid rgba(255,77,140,.28);color:#ff6aaa;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">💕 Relationship</span>',
   };
   return badges[type]||'';
-}
-
-function buildMpSetup(){
-  return `
-  <button class="back-btn" onclick="showScreen('servers')">← Back</button>
-  <div class="title" style="font-size:3rem">${S.isHost?'Create Room':'Join Room'}</div>
-  <div class="card">
-    <div class="lbl">${S.isHost?'A code will be generated — share it with friends':'Enter the room code'}</div>
-    ${!S.isHost?`<input class="inp code-inp" id="join-code" placeholder="ABC123" maxlength="6" autocomplete="off"/>`:''}
-    <div class="st st-err" id="mp-err" style="display:none"></div>
-    <button class="btn btn-p btn-full" onclick="${S.isHost?'startHost()':'joinRoom()'}">
-      ${S.isHost?'🎮 Create Room':'Connect →'}
-    </button>
-  </div>`;
 }
 
 function buildMpLobby(){
@@ -1112,23 +1118,17 @@ function sendChat(){
 /* ═══════════════════════════════════════
    MULTIPLAYER HOST
 ═══════════════════════════════════════ */
-function goCreateRoom(){S.isHost=true;S.mpStatus='';showScreen('mpSetup');}
-function goJoinRoom(){S.isHost=false;S.mpStatus='';showScreen('mpSetup');}
-
 function genRoomCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return Array.from({length:6},()=>c[~~(Math.random()*c.length)]).join('');}
 
 function startHost(isRetry){
-  if(!window.Peer){setMpErr('PeerJS loading, try again in a second…');return;}
+  if(!window.Peer){showToast('PeerJS loading, try again in a second…');return;}
   if(!isRetry){
-    setMpErr('');
     S.conns=[]; S.hostAnswers={}; S.hostPlayers=[]; S.mpPlayers=[];
     S.mpAnsweredCount=0; S.mpReveal=null; S.chatMsgs=[]; S.unread=0;
     S.questions=[]; S.qIdx=0; S.myAnswer=null; S.genError=false;
   }
   if(S.peer){try{S.peer.destroy();}catch(e){} S.peer=null;}
 
-  // FIX: Use explicit PeerJS config with multiple STUN servers
-  // and force a fresh peer each time to avoid stale ICE state
   const peerConfig={
     debug:0,
     config:{
@@ -1147,7 +1147,7 @@ function startHost(isRetry){
     S.myPeerId=id; S.roomId=id;
     const me={id,name:S.account.username,emoji:ICONS[S.account.iconId].e};
     S.hostPlayers=[me]; S.mpPlayers=[me];
-    // Register in public server listing if public
+    // Register in shared public server listing
     if(S._lobbyPrivacy==='public'){
       writePubServer({
         code:id,
@@ -1159,7 +1159,6 @@ function startHost(isRetry){
         name:S.account.username,
         created:Date.now(),
       });
-      // Heartbeat every 30s
       if(S._heartbeatInt)clearInterval(S._heartbeatInt);
       S._heartbeatInt=setInterval(heartbeatPubServer,30000);
     }
@@ -1171,7 +1170,7 @@ function startHost(isRetry){
   });
   S.peer.on('error',err=>{
     if(err.type==='unavailable-id'){startHost(true);}
-    else setMpErr('Connection error: '+err.message+'. Please try again.');
+    else showToast('Connection error: '+err.message);
   });
 }
 
@@ -1182,7 +1181,6 @@ function setupHostConn(conn){
   });
   conn.on('data',msg=>{
     if(msg.type==='join'){
-      // Password check
       if(S._lobbyPassword && msg.password!==S._lobbyPassword){
         conn.send({type:'error',msg:'Wrong password! 🔑'});
         setTimeout(()=>conn.close(),500);
@@ -1254,8 +1252,7 @@ function hostStartGame(){
   if(S.mpPlayers.length<2){updateLobbyStatus('Need at least 2 players!');return;}
   S.hostAnswers={}; S.mpAnsweredCount=0; S.myAnswer=null; S.qIdx=0;
   broadcast({type:'startGame',questions:S.questions,qIdx:0});
-  // Remove from public listing once game starts
-  removePubServer(S.roomId);
+  removePubServerAsync(S.roomId);
   if(S._heartbeatInt){clearInterval(S._heartbeatInt);S._heartbeatInt=null;}
   showScreen('mpGame');
 }
@@ -1271,14 +1268,14 @@ function hostNextQ(){
 function hostEndGame(){
   broadcast({type:'gameover'});
   S.account.gamesPlayed++; saveAcc(S.account);
-  removePubServer(S.roomId);
+  removePubServerAsync(S.roomId);
   if(S._heartbeatInt){clearInterval(S._heartbeatInt);S._heartbeatInt=null;}
   showScreen('mpGameover');
 }
 
 function backToMenu(){
   closeFlappy();
-  removePubServer(S.roomId);
+  removePubServerAsync(S.roomId);
   if(S._heartbeatInt){clearInterval(S._heartbeatInt);S._heartbeatInt=null;}
   if(S._serverPoll){clearInterval(S._serverPoll);S._serverPoll=null;}
   if(S.peer){try{S.peer.destroy();}catch(e){}} S.peer=null;
@@ -1290,16 +1287,15 @@ function backToMenu(){
    MULTIPLAYER CLIENT
 ═══════════════════════════════════════ */
 function joinRoom(code, password){
-  if(!window.Peer){setMpErr('PeerJS loading, try again…');return;}
-  const roomCode=code||(document.getElementById('join-code')?.value||'').trim().toUpperCase();
+  if(!window.Peer){showToast('PeerJS loading, try again…');return;}
+  const roomCode=(code||'').trim().toUpperCase();
   const pw=password||S.joinPassword||'';
-  if(!roomCode||roomCode.length<4){setMpErr('Enter a valid room code.');return;}
-  setMpErr('Connecting…');
+  if(!roomCode||roomCode.length<4){showToast('Enter a valid room code.');return;}
+  showToast('Connecting…');
   S.mpPlayers=[]; S.chatMsgs=[]; S.unread=0;
   S.questions=[]; S.qIdx=0; S.myAnswer=null; S.mpReveal=null;
   if(S.peer){try{S.peer.destroy();}catch(e){}}
 
-  // FIX: Same robust ICE config for clients
   const peerConfig={
     debug:0,
     config:{
@@ -1319,20 +1315,20 @@ function joinRoom(code, password){
     S.myPeerId=id; S.roomId=roomCode;
     const conn=S.peer.connect(roomCode,{reliable:true});
     S.hostConn=conn;
-    joinTimeout=setTimeout(()=>{if(S.screen!=='mpLobby')setMpErr('Timed out — check the room code and try again.');},10000);
+    joinTimeout=setTimeout(()=>{if(S.screen!=='mpLobby')showToast('Timed out — check the room code and try again.');},10000);
     conn.on('open',()=>{
       clearTimeout(joinTimeout);
       conn.send({type:'join',name:S.account.username,emoji:ICONS[S.account.iconId].e,password:pw});
-      setMpErr(''); showScreen('mpLobby');
+      showScreen('mpLobby');
     });
     conn.on('data',msg=>handleClientMsg(msg));
     conn.on('close',()=>showToast('Disconnected from host.'));
-    conn.on('error',()=>{clearTimeout(joinTimeout);setMpErr('Connection failed — check code.');});
+    conn.on('error',()=>{clearTimeout(joinTimeout);showToast('Connection failed — check code.');});
   });
   S.peer.on('error',e=>{
     clearTimeout(joinTimeout);
-    if(e.type==='peer-unavailable')setMpErr('Room not found. Double-check the code.');
-    else setMpErr('Could not connect. Check the room code.');
+    if(e.type==='peer-unavailable')showToast('Room not found. Double-check the code.');
+    else showToast('Could not connect. Check the room code.');
   });
 }
 
@@ -1360,8 +1356,6 @@ function handleClientMsg(msg){
   if(msg.type==='chat'){addChatMsg({...msg,mine:false});}
   if(msg.type==='error'){
     showToast('❌ '+msg.msg);
-    setMpErr(msg.msg);
-    // If kicked (e.g. wrong password), go back
     setTimeout(()=>{if(S.screen==='mpLobby')showScreen('servers');},2000);
   }
 }
@@ -1395,12 +1389,6 @@ function updateLobbyStatus(msg){
   const el=document.getElementById('lobby-st');
   if(el){el.textContent=msg;el.className='st '+(msg.startsWith('Need')||msg.startsWith('Error')?'st-err':'st-ok');}
   else showScreen('mpLobby');
-}
-
-function setMpErr(msg){
-  const el=document.getElementById('mp-err');
-  if(el){el.textContent=msg;el.style.display=msg?'block':'none';}
-  S.mpStatus=msg;
 }
 
 /* ═══════════════════════════════════════
