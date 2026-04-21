@@ -25,12 +25,11 @@
     @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
     @keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
     @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
-    @keyframes flapWing{0%,100%{transform:rotate(-20deg)}50%{transform:rotate(20deg)}}
+    @keyframes glowPulse{0%,100%{box-shadow:0 0 0 2px transparent}50%{box-shadow:0 0 0 3px var(--a3)}}
     #flappy-overlay{position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,.92);display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;backdrop-filter:blur(4px)}
     #flappy-canvas{border-radius:16px;border:2px solid rgba(255,255,255,.1);box-shadow:0 0 40px rgba(0,194,255,.2);max-width:100%;cursor:pointer;touch-action:none}
     #flappy-hud{font-family:'Bangers',cursive;font-size:1.1rem;color:var(--mut);letter-spacing:1px;text-align:center}
     #flappy-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.5);border-radius:50%;width:36px;height:36px;font-size:.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
-    @keyframes glowPulse{0%,100%{box-shadow:0 0 0 2px transparent}50%{box-shadow:0 0 0 3px var(--a3)}}
 
     body{background:var(--bg);color:var(--txt);font-family:'Nunito',sans-serif;min-height:100vh;overflow-x:hidden}
     #app{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px 16px 80px;position:relative}
@@ -134,7 +133,6 @@
     .maj-badge{background:linear-gradient(135deg,var(--a3),var(--a1));color:#fff;border-radius:50px;padding:8px 18px;font-size:.85rem;font-weight:800;text-align:center;width:100%}
     .gen-banner{background:rgba(0,194,255,.08);border:1px solid rgba(0,194,255,.2);border-radius:12px;padding:12px 16px;text-align:center;font-size:.85rem;font-weight:700;color:var(--a2);width:100%}
     .go-icon{font-size:4.2rem;animation:popIn .6s cubic-bezier(.175,.885,.32,1.275) both}
-    /* Leaderboard */
     .lb-tab-on{background:var(--a3);color:#0d1a14}
     .lb-tab-off{background:rgba(255,255,255,.04);color:var(--mut)}
     .lb-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);transition:background .2s}
@@ -148,12 +146,28 @@
     .lb-val{font-family:'Bangers',cursive;font-size:1.5rem;letter-spacing:1px;color:var(--a3)}
     .lb-sub{font-size:.65rem;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:1px}
     .go-title{font-family:'Bangers',cursive;font-size:clamp(2.2rem,8vw,3.6rem);letter-spacing:4px;text-align:center;background:linear-gradient(135deg,var(--a3),var(--a1));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-    .user-list{display:flex;flex-wrap:wrap;gap:7px}
-    .user-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:50px;padding:6px 15px;color:var(--txt);font-family:'Nunito',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:border-color .2s,background .2s}
-    .user-btn:hover{border-color:var(--a2);background:rgba(0,194,255,.1)}
     .quick-acc-btn{width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;cursor:pointer;transition:border-color .2s,background .2s,transform .12s;font-family:'Nunito',sans-serif;color:var(--txt)}
     .quick-acc-btn:hover{border-color:var(--a2);background:rgba(0,194,255,.07);transform:translateY(-2px)}
     .quick-acc-btn:active{transform:scale(.98)}
+    /* SERVERS screen */
+    .server-card{background:var(--card);border:1px solid rgba(255,255,255,.09);border-radius:18px;padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:border-color .2s,background .2s,transform .15s;width:100%}
+    .server-card:hover{transform:translateY(-2px);border-color:var(--a2);background:rgba(0,194,255,.05)}
+    .server-card.locked{border-color:rgba(255,214,10,.3);background:rgba(255,214,10,.04)}
+    .server-card.locked:hover{border-color:var(--a3);background:rgba(255,214,10,.09)}
+    .server-badge-pub{background:rgba(61,220,132,.15);border:1px solid rgba(61,220,132,.35);color:#3ddc84;border-radius:50px;padding:3px 10px;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px}
+    .server-badge-priv{background:rgba(255,214,10,.12);border:1px solid rgba(255,214,10,.35);color:var(--a3);border-radius:50px;padding:3px 10px;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px}
+    .server-players{font-size:.72rem;font-weight:700;color:var(--mut)}
+    .big-server-btn{width:100%;padding:20px 18px;border:none;border-radius:20px;cursor:pointer;font-family:'Bangers',cursive;font-size:2rem;letter-spacing:3px;transition:transform .15s,box-shadow .15s;display:flex;flex-direction:column;align-items:center;gap:6px}
+    .big-server-btn:hover{transform:translateY(-4px)}
+    .big-server-btn .sub-txt{font-family:'Nunito',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:0}
+    /* Privacy toggle */
+    .privacy-row{display:flex;gap:10px;width:100%}
+    .priv-opt{flex:1;padding:14px 12px;border-radius:14px;border:2px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);cursor:pointer;text-align:center;transition:all .2s;font-family:'Nunito',sans-serif}
+    .priv-opt.selected-pub{border-color:#3ddc84;background:rgba(61,220,132,.1)}
+    .priv-opt.selected-priv{border-color:var(--a3);background:rgba(255,214,10,.09)}
+    .priv-ico{font-size:2rem;display:block;margin-bottom:4px}
+    .priv-label{font-size:.9rem;font-weight:800;display:block}
+    .priv-desc{font-size:.7rem;font-weight:600;color:var(--mut);display:block;margin-top:2px}
     /* Chat */
     #chat-fab-wrap{position:fixed;bottom:68px;right:20px;z-index:200}
     #chat-fab-wrap button{width:52px;height:52px;background:linear-gradient(135deg,var(--a1),var(--a2));border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 6px 22px rgba(0,0,0,.45);transition:transform .2s}
@@ -180,12 +194,10 @@
     .chat-inp::placeholder{color:var(--mut)}
     .chat-send{background:linear-gradient(135deg,var(--a1),var(--a2));border:none;border-radius:12px;padding:10px 16px;color:#fff;font-weight:800;cursor:pointer;font-size:.9rem;transition:transform .15s;font-family:'Nunito',sans-serif}
     .chat-send:hover{transform:scale(1.05)}
-    /* Toast & Coins */
     #toast-el{position:fixed;bottom:50px;left:50%;transform:translateX(-50%) translateY(20px);background:#3ddc84;color:#0d1a14;padding:10px 24px;border-radius:50px;font-weight:800;font-size:.86rem;z-index:9999;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.3);opacity:0;transition:opacity .3s,transform .3s;pointer-events:none}
     #toast-el.show{opacity:1;transform:translateX(-50%) translateY(0)}
     #coins-el{position:fixed;top:68px;left:50%;transform:translateX(-50%);padding:11px 26px;border-radius:50px;font-weight:800;font-size:1rem;z-index:9999;white-space:nowrap;pointer-events:none;opacity:0}
     #coins-el.fly{animation:coinFly 2.8s ease forwards;background:linear-gradient(135deg,var(--a3),var(--a1));color:#fff}
-    /* Footer */
     .footer{position:fixed;bottom:0;left:0;right:0;padding:9px 20px;text-align:center;font-size:.72rem;font-weight:700;color:var(--mut);z-index:100;border-top:1px solid rgba(255,255,255,.06);background:rgba(13,13,26,.88);backdrop-filter:blur(12px)}
     .footer-name{color:var(--a3)}
   </style>
@@ -199,7 +211,7 @@
   <div id="chat-panel-el"></div>
   <div id="toast-el"></div>
   <div id="coins-el"></div>
-  <div class="footer">Made by <span class="footer-name">Saeed Alza</span> 😄 Have fun!</div>
+  <div class="footer">Made by <span class="footer-name">Alzarooni</span> 😄 Have fun!</div>
 </div>
 
 <script>
@@ -239,19 +251,19 @@ const S = {
   hostAnswers:{}, hostPlayers:[], myPeerId:'',
   roomId:'', mpPlayers:[], mpAnsweredCount:0, mpReveal:null, mpStatus:'',
   chatOpen:false, chatMsgs:[], unread:0,
+  // Servers / lobby browser
+  serversList:[], serversTab:'browse', createPrivacy:'public', createPassword:'',
+  joinPassword:'',
 };
 const MP_SCREENS = ['mpLobby','mpGame','mpReveal','mpGameover'];
 
 /* ═══════════════════════════════════════
-   STORAGE (localStorage only)
+   STORAGE
 ═══════════════════════════════════════ */
 function saveAcc(a){if(!a)return;try{localStorage.setItem('acc:'+a.username,JSON.stringify(a));localStorage.setItem('lastUser',a.username);}catch(e){}}
 function loadAcc(u){try{const r=localStorage.getItem('acc:'+u);return r?JSON.parse(r):null;}catch(e){return null;}}
 function getAllUsers(){const u=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('acc:'))u.push(k.slice(4));}return u;}
 function mkAcc(u,pw){return{username:u,password:pw,coins:100,iconId:'fox',themeId:'void',ownedIcons:[...FREE_ICONS],ownedThemes:['void'],gamesPlayed:0,questionsAnswered:0,majorityWins:0,totalCoinsEarned:100};}
-
-function syncGlobalStats(){}
-function mergeLbEntry(){}
 
 /* ═══════════════════════════════════════
    THEME
@@ -288,11 +300,11 @@ function spawnConfetti(color){
   for(let i=0;i<22;i++){
     const d=document.createElement('div');
     const rn=Math.random;
-    d.style.cssText=`position:fixed;width:${5+rn()*7}px;height:${5+rn()*7}px;background:${cols[~~(rn()*cols.length)]};border-radius:${rn()>.5?'50%':'3px'};left:${15+rn()*70}vw;top:50vh;pointer-events:none;z-index:9998;opacity:1;transition:transform ${.6+rn()*.7}s ease-out,opacity ${.4+rn()*.4}s ease-out ${.35+rn()*.3}s;`;
+    d.style.cssText='position:fixed;width:'+(5+rn()*7)+'px;height:'+(5+rn()*7)+'px;background:'+cols[~~(rn()*cols.length)]+';border-radius:'+(rn()>.5?'50%':'3px')+';left:'+(15+rn()*70)+'vw;top:50vh;pointer-events:none;z-index:9998;opacity:1;transition:transform '+(0.6+rn()*0.7)+'s ease-out,opacity '+(0.4+rn()*0.4)+'s ease-out '+(0.35+rn()*0.3)+'s;';
     document.body.appendChild(d);
     requestAnimationFrame(()=>{
       const a=(rn()*260-130)*Math.PI/180,dist=80+rn()*200;
-      d.style.transform=`translate(${Math.cos(a)*dist}px,${Math.sin(a)*dist-120}px) rotate(${rn()*360}deg)`;
+      d.style.transform='translate('+Math.cos(a)*dist+'px,'+(Math.sin(a)*dist-120)+'px) rotate('+(rn()*360)+'deg)';
       d.style.opacity='0';
     });
     setTimeout(()=>d.remove(),1400);
@@ -303,6 +315,24 @@ function escHtml(t){return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt
 function cssVar(v){return getComputedStyle(document.documentElement).getPropertyValue('--'+v).trim();}
 
 /* ═══════════════════════════════════════
+   FIX: Clean URL so PeerJS + WebRTC works
+   even when page was opened via Google share
+   links (?si=..., #..., etc.)
+═══════════════════════════════════════ */
+(function cleanUrl(){
+  // Remove query params and hash that Google / social share links add.
+  // These don't affect app logic (we use no URL params) but can cause
+  // PeerJS to fail because some STUN/TURN ICE candidates get blocked
+  // when the page origin looks like a redirect. Strip safely.
+  try{
+    const clean=window.location.origin+window.location.pathname;
+    if(window.location.search||window.location.hash){
+      window.history.replaceState({},'',clean);
+    }
+  }catch(e){}
+})();
+
+/* ═══════════════════════════════════════
    SCREEN ROUTER
 ═══════════════════════════════════════ */
 function showScreen(name){
@@ -310,6 +340,7 @@ function showScreen(name){
   if(S.account)applyTheme(S.account.themeId);
   const builders={
     login:buildLogin, menu:buildMenu, shop:buildShop, solo:buildSolo, soloGameover:buildSoloGameover,
+    servers:buildServers,
     mpSetup:buildMpSetup, mpLobby:buildMpLobby, mpGame:buildMpGame,
     mpReveal:buildMpReveal, mpGameover:buildMpGameover
   };
@@ -330,13 +361,16 @@ function afterRender(n){
     if(c){c.addEventListener('keydown',e=>{if(e.key==='Enter')joinRoom();});
           c.addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase();});}
   }
+  if(n==='servers'){
+    // Poll public servers every 3s while on this screen
+    if(S._serverPoll)clearInterval(S._serverPoll);
+    S._serverPoll=setInterval(()=>{if(S.screen==='servers')fetchPublicServers();else clearInterval(S._serverPoll);},3000);
+    fetchPublicServers();
+  }
 }
 
 /* ═══════════════════════════════════════
    SCREEN BUILDERS
-═══════════════════════════════════════ */
-/* ═══════════════════════════════════════
-   LEADERBOARD
 ═══════════════════════════════════════ */
 
 function buildLogin(){
@@ -344,7 +378,6 @@ function buildLogin(){
   const atLimit=users.length>=2;
   const overLimit=users.length>2;
 
-  // If over limit, show forced deletion screen
   if(overLimit){
     return `
     <div class="title" style="font-size:2.8rem">⚠️ Too Many Accounts</div>
@@ -432,10 +465,12 @@ function buildMenu(){
     </div>
     <div class="coin-bar">🪙 ${a.coins}</div>
   </div>
+  <button class="big-server-btn" style="background:linear-gradient(135deg,#7c3aed,#a855f7,#ec4899);color:#fff;box-shadow:0 8px 32px rgba(124,58,237,.4)" onclick="showScreen('servers')">
+    🌐 SERVERS
+    <span class="sub-txt">Browse public & private rooms</span>
+  </button>
   <div class="menu-grid">
     <button class="menu-btn" onclick="startSolo()"><div class="menu-ico">🎮</div><div class="menu-t">Solo Play</div><div class="menu-s">Fresh questions every round</div></button>
-    <button class="menu-btn" onclick="goCreateRoom()"><div class="menu-ico">🏠</div><div class="menu-t">Create Room</div><div class="menu-s">Host multiplayer</div></button>
-    <button class="menu-btn" onclick="goJoinRoom()"><div class="menu-ico">🚪</div><div class="menu-t">Join Room</div><div class="menu-s">Enter a room code</div></button>
     <button class="menu-btn" onclick="showScreen('shop')"><div class="menu-ico">🛍️</div><div class="menu-t">Shop</div><div class="menu-s">Icons &amp; themes</div></button>
   </div>
   <div class="stats-row">
@@ -444,6 +479,183 @@ function buildMenu(){
   <button class="btn btn-ghost" style="width:100%" onclick="switchAccount()">Switch Account</button>`;
 }
 
+/* ═══════════════════════════════════════
+   SERVERS SCREEN
+═══════════════════════════════════════ */
+// We store public server listings in localStorage under key 'pub_servers'
+// Each entry: {id, code, host, hostEmoji, players, max, privacy, hasPassword, name, created}
+// Hosts write their entry on creation, remove on gameover/disconnect.
+
+function pubServersKey(){return 'pub_servers';}
+function readPubServers(){try{return JSON.parse(localStorage.getItem(pubServersKey())||'[]');}catch(e){return[];}}
+function writePubServer(entry){
+  let list=readPubServers().filter(s=>s.code!==entry.code);
+  list.push(entry);
+  // Prune stale (older than 2 min)
+  const now=Date.now();
+  list=list.filter(s=>now-s.created<120000);
+  localStorage.setItem(pubServersKey(),JSON.stringify(list));
+}
+function removePubServer(code){
+  let list=readPubServers().filter(s=>s.code!==code);
+  localStorage.setItem(pubServersKey(),JSON.stringify(list));
+}
+function heartbeatPubServer(){
+  if(!S.isHost||!S.roomId)return;
+  let list=readPubServers();
+  const idx=list.findIndex(s=>s.code===S.roomId);
+  if(idx>=0){list[idx].created=Date.now();list[idx].players=S.hostPlayers.length;localStorage.setItem(pubServersKey(),JSON.stringify(list));}
+}
+
+function fetchPublicServers(){
+  let list=readPubServers();
+  const now=Date.now();
+  list=list.filter(s=>now-s.created<120000); // fresh only
+  S.serversList=list;
+  renderServersList();
+}
+
+function renderServersList(){
+  const el=document.getElementById('servers-list');
+  if(!el)return;
+  const pub=S.serversList.filter(s=>s.privacy==='public');
+  if(pub.length===0){
+    el.innerHTML='<div class="st" style="padding:20px 0;font-size:.85rem">No public servers right now — create one!</div>';
+    return;
+  }
+  el.innerHTML=pub.map(s=>`
+    <div class="server-card ${s.hasPassword?'locked':''}" onclick="joinServerFromList('${escHtml(s.code)}','${s.hasPassword?'1':'0'}')">
+      <div style="font-size:2rem">${s.hostEmoji||'🦊'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:800;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(s.name||s.host)}'s room</div>
+        <div style="display:flex;align-items:center;gap:7px;margin-top:4px;flex-wrap:wrap">
+          <span class="${s.privacy==='public'?'server-badge-pub':'server-badge-priv'}">${s.privacy==='public'?'🌐 Public':'🔒 Private'}</span>
+          ${s.hasPassword?'<span style="font-size:.72rem;font-weight:700;color:var(--a3)">🔑 Password</span>':''}
+          <span class="server-players">👥 ${s.players||1} player${(s.players||1)!==1?'s':''}</span>
+        </div>
+      </div>
+      <div style="font-family:\'Bangers\',cursive;font-size:.9rem;letter-spacing:2px;color:var(--a3);background:rgba(255,214,10,.1);border:1px solid rgba(255,214,10,.25);border-radius:8px;padding:4px 10px">${escHtml(s.code)}</div>
+    </div>`).join('');
+}
+
+function buildServers(){
+  const a=S.account;
+  return `
+  <button class="back-btn" onclick="showScreen('menu')">← Back</button>
+  <div class="title" style="font-size:3rem">🌐 Servers</div>
+  <div style="display:flex;gap:10px;width:100%">
+    <button class="btn btn-g" style="flex:1;font-size:1.05rem" onclick="startServerCreate()">➕ Create Room</button>
+    <button class="btn btn-s" style="flex:1;font-size:1.05rem" onclick="showJoinCode()">🚪 Join by Code</button>
+  </div>
+  <div class="card" style="gap:12px;padding-bottom:14px">
+    <div class="row-between">
+      <div class="sec">🌐 Public Servers</div>
+      <button onclick="fetchPublicServers()" style="background:none;border:none;color:var(--a2);font-size:.75rem;font-weight:800;cursor:pointer">↻ Refresh</button>
+    </div>
+    <div id="servers-list"><div class="st">Loading…</div></div>
+  </div>
+  <!-- JOIN BY CODE card (hidden by default) -->
+  <div id="join-code-card" style="display:none;width:100%">
+    <div class="card" style="gap:13px">
+      <div class="lbl">Enter Room Code</div>
+      <input class="inp code-inp" id="join-code" placeholder="ABC123" maxlength="6" autocomplete="off"/>
+      <div id="join-pw-wrap" style="display:none">
+        <div class="lbl" style="margin-bottom:6px">Room Password</div>
+        <input class="inp" id="join-pw" type="password" placeholder="Password" maxlength="32"/>
+      </div>
+      <div class="st st-err" id="join-err" style="display:none"></div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="hideJoinCode()">Cancel</button>
+        <button class="btn btn-p" style="flex:2" onclick="joinRoomFromCode()">Connect →</button>
+      </div>
+    </div>
+  </div>
+  <!-- CREATE ROOM form (hidden by default) -->
+  <div id="create-room-card" style="display:none;width:100%">
+    <div class="card" style="gap:14px">
+      <div class="lbl">Room Visibility</div>
+      <div class="privacy-row">
+        <div class="priv-opt ${S.createPrivacy==='public'?'selected-pub':''}" onclick="setPrivacy('public')">
+          <span class="priv-ico">🌐</span>
+          <span class="priv-label">Public</span>
+          <span class="priv-desc">Listed in Servers browser</span>
+        </div>
+        <div class="priv-opt ${S.createPrivacy==='private'?'selected-priv':''}" onclick="setPrivacy('private')">
+          <span class="priv-ico">🔒</span>
+          <span class="priv-label">Private</span>
+          <span class="priv-desc">Invite only via code</span>
+        </div>
+      </div>
+      <div class="lbl">Password (optional)</div>
+      <input class="inp" id="room-pw" type="password" placeholder="Leave blank for no password" maxlength="32"/>
+      <div class="st st-err" id="create-err" style="display:none"></div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="hideCreateRoom()">Cancel</button>
+        <button class="btn btn-g" style="flex:2" onclick="createRoomFromServer()">🎮 Create Room</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function startServerCreate(){
+  document.getElementById('join-code-card').style.display='none';
+  const el=document.getElementById('create-room-card');
+  el.style.display=el.style.display==='none'?'block':'none';
+}
+function hideCreateRoom(){document.getElementById('create-room-card').style.display='none';}
+function showJoinCode(){
+  document.getElementById('create-room-card').style.display='none';
+  const el=document.getElementById('join-code-card');
+  el.style.display=el.style.display==='none'?'block':'none';
+  const c=document.getElementById('join-code');
+  if(c){c.addEventListener('keydown',e=>{if(e.key==='Enter')joinRoomFromCode();});
+        c.addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase();});}
+}
+function hideJoinCode(){document.getElementById('join-code-card').style.display='none';}
+
+function setPrivacy(v){
+  S.createPrivacy=v;
+  document.querySelectorAll('.priv-opt').forEach(el=>{
+    el.className='priv-opt';
+    if(v==='public'&&el.querySelector('.priv-label').textContent==='Public')el.classList.add('selected-pub');
+    if(v==='private'&&el.querySelector('.priv-label').textContent==='Private')el.classList.add('selected-priv');
+  });
+}
+
+function createRoomFromServer(){
+  S.createPassword=document.getElementById('room-pw')?.value||'';
+  S.isHost=true;
+  // Store privacy & password in S so startHost can use them
+  S._lobbyPrivacy=S.createPrivacy;
+  S._lobbyPassword=S.createPassword;
+  startHost();
+}
+
+function joinServerFromList(code, hasPw){
+  // Show join code card pre-filled
+  showJoinCode();
+  const c=document.getElementById('join-code');
+  if(c)c.value=code.toUpperCase();
+  const pwWrap=document.getElementById('join-pw-wrap');
+  if(pwWrap)pwWrap.style.display=hasPw==='1'?'block':'none';
+}
+
+function joinRoomFromCode(){
+  const code=(document.getElementById('join-code')?.value||'').trim().toUpperCase();
+  const pw=(document.getElementById('join-pw')?.value||'').trim();
+  if(!code||code.length<4){
+    const e=document.getElementById('join-err');
+    if(e){e.textContent='Enter a valid room code.';e.style.display='block';}
+    return;
+  }
+  S.joinPassword=pw;
+  S.isHost=false;
+  joinRoom(code,pw);
+}
+
+/* ═══════════════════════════════════════
+   SHOP
+═══════════════════════════════════════ */
 function buildShop(){
   const a=S.account, t=S.shopTab;
   const icoHTML=t==='icons'?Object.entries(ICONS).map(([id,it])=>{
@@ -479,16 +691,7 @@ function buildShop(){
 
 function buildSolo(){
   const q=S.questions[S.qIdx], a=S.account;
-  const typeBadge=(({
-    funny:       '<span style="background:rgba(255,77,109,.12);border:1px solid rgba(255,77,109,.25);color:var(--a1);font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">😂 For Laughs</span>',
-    serious:     '<span style="background:rgba(0,194,255,.15);border:1px solid rgba(0,194,255,.3);color:var(--a2);font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">🧠 Deep Cut</span>',
-    hypothetical:'<span style="background:rgba(148,103,255,.15);border:1px solid rgba(148,103,255,.3);color:#a78bfa;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">💭 What If</span>',
-    social:      '<span style="background:rgba(255,200,0,.12);border:1px solid rgba(255,200,0,.28);color:var(--a3);font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">👥 Social</span>',
-    gross:       '<span style="background:rgba(100,220,80,.12);border:1px solid rgba(100,220,80,.28);color:#6ddd55;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">🤢 Gross</span>',
-    deep:        '<span style="background:rgba(180,60,255,.13);border:1px solid rgba(180,60,255,.3);color:#d68fff;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">🌌 Deep</span>',
-    dare:        '<span style="background:rgba(255,120,0,.12);border:1px solid rgba(255,120,0,.28);color:#ff9340;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">🎯 Dare</span>',
-    relationship:'<span style="background:rgba(255,77,140,.12);border:1px solid rgba(255,77,140,.28);color:#ff6aaa;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">💕 Relationship</span>',
-  })[q?.type]||'');
+  const typeBadge=getTypeBadge(q?.type);
   return `
   <div class="row-between" style="width:100%">
     <button class="back-btn" onclick="showScreen('menu')">← Menu</button>
@@ -513,9 +716,23 @@ function buildSolo(){
   `:'<div class="gen-banner"><span class="loader"></span>Loading…</div>'}`;
 }
 
+function getTypeBadge(type){
+  const badges={
+    funny:'<span style="background:rgba(255,77,109,.12);border:1px solid rgba(255,77,109,.25);color:var(--a1);font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">😂 For Laughs</span>',
+    serious:'<span style="background:rgba(0,194,255,.15);border:1px solid rgba(0,194,255,.3);color:var(--a2);font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">🧠 Deep Cut</span>',
+    hypothetical:'<span style="background:rgba(148,103,255,.15);border:1px solid rgba(148,103,255,.3);color:#a78bfa;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">💭 What If</span>',
+    social:'<span style="background:rgba(255,200,0,.12);border:1px solid rgba(255,200,0,.28);color:var(--a3);font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">👥 Social</span>',
+    gross:'<span style="background:rgba(100,220,80,.12);border:1px solid rgba(100,220,80,.28);color:#6ddd55;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">🤢 Gross</span>',
+    deep:'<span style="background:rgba(180,60,255,.13);border:1px solid rgba(180,60,255,.3);color:#d68fff;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">🌌 Deep</span>',
+    dare:'<span style="background:rgba(255,120,0,.12);border:1px solid rgba(255,120,0,.28);color:#ff9340;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">🎯 Dare</span>',
+    relationship:'<span style="background:rgba(255,77,140,.12);border:1px solid rgba(255,77,140,.28);color:#ff6aaa;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">💕 Relationship</span>',
+  };
+  return badges[type]||'';
+}
+
 function buildMpSetup(){
   return `
-  <button class="back-btn" onclick="showScreen('menu')">← Back</button>
+  <button class="back-btn" onclick="showScreen('servers')">← Back</button>
   <div class="title" style="font-size:3rem">${S.isHost?'Create Room':'Join Room'}</div>
   <div class="card">
     <div class="lbl">${S.isHost?'A code will be generated — share it with friends':'Enter the room code'}</div>
@@ -529,12 +746,17 @@ function buildMpSetup(){
 
 function buildMpLobby(){
   const a=S.account;
+  const privLabel=S._lobbyPrivacy==='public'?'🌐 Public Room':'🔒 Private Room';
+  const pwLabel=S._lobbyPassword?'🔑 Password protected':'';
   return `
   <div class="title" style="font-size:3rem">Lobby</div>
   <div class="card">
     <div class="lbl">Room Code — tap to copy</div>
     <div class="room-code" onclick="copyCode()">${S.roomId}</div>
-    <div style="font-size:.7rem;color:var(--mut);text-align:center;font-weight:700">📋 Tap to copy · Share with friends</div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:2px">
+      <span style="font-size:.7rem;color:var(--mut);font-weight:700">📋 Tap to copy · Share with friends</span>
+      ${S.isHost?`<span style="font-size:.7rem;font-weight:800;color:${S._lobbyPrivacy==='public'?'#3ddc84':'var(--a3)'}">${privLabel}${pwLabel?' · '+pwLabel:''}</span>`:''}
+    </div>
   </div>
   <div class="card" style="gap:12px">
     <div class="row-between"><div class="sec">Players</div><div class="sec">${S.mpPlayers.length} joined</div></div>
@@ -552,7 +774,7 @@ function buildMpLobby(){
           : `<button class="btn btn-g btn-full" style="font-size:1rem" onclick="hostStartGame()">▶ Start Game</button>`
       }
     </div>`
-            :`<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">
+    :`<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">
     <div class="waiting">Waiting for host to start…</div>
     <button class="btn btn-s btn-full" onclick="openFlappy()" style="font-size:.9rem">🐦 Play Flappy Bird while you wait!</button>
   </div>`}`;
@@ -560,16 +782,7 @@ function buildMpLobby(){
 
 function buildMpGame(){
   const q=S.questions[S.qIdx];
-  const typeBadge=(({
-    funny:       '<span style="background:rgba(255,77,109,.12);border:1px solid rgba(255,77,109,.25);color:var(--a1);font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">😂 For Laughs</span>',
-    serious:     '<span style="background:rgba(0,194,255,.15);border:1px solid rgba(0,194,255,.3);color:var(--a2);font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">🧠 Deep Cut</span>',
-    hypothetical:'<span style="background:rgba(148,103,255,.15);border:1px solid rgba(148,103,255,.3);color:#a78bfa;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">💭 What If</span>',
-    social:      '<span style="background:rgba(255,200,0,.12);border:1px solid rgba(255,200,0,.28);color:var(--a3);font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">👥 Social</span>',
-    gross:       '<span style="background:rgba(100,220,80,.12);border:1px solid rgba(100,220,80,.28);color:#6ddd55;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">🤢 Gross</span>',
-    deep:        '<span style="background:rgba(180,60,255,.13);border:1px solid rgba(180,60,255,.3);color:#d68fff;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">🌌 Deep</span>',
-    dare:        '<span style="background:rgba(255,120,0,.12);border:1px solid rgba(255,120,0,.28);color:#ff9340;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">🎯 Dare</span>',
-    relationship:'<span style="background:rgba(255,77,140,.12);border:1px solid rgba(255,77,140,.28);color:#ff6aaa;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:50px">💕 Relationship</span>',
-  })[q?.type]||'');
+  const typeBadge=getTypeBadge(q?.type);
   return `
   <div class="row-between" style="width:100%">
     <div class="sec">Question ${S.qIdx+1}</div>
@@ -658,7 +871,6 @@ function hostPlayAgain(){
    AUTH
 ═══════════════════════════════════════ */
 function setSignup(v){S.isSignup=v;showScreen('login');}
-function quickLogin(u){const n=document.getElementById('ln');if(n){n.value=u;document.getElementById('lp')?.focus();}}
 function instantLogin(u){
   const acc=loadAcc(u); if(!acc)return;
   S.account=acc; applyTheme(acc.themeId);
@@ -708,7 +920,6 @@ function _checkComebackPending(){
 function deleteAccount(username){
   if(!confirm('Delete account "'+username+'"? This cannot be undone!')) return;
   localStorage.removeItem('acc:'+username);
-  // If deleting current account, log out
   if(S.account?.username===username){ S.account=null; }
   showScreen('login');
 }
@@ -733,7 +944,7 @@ function buyTheme(id){
 }
 
 /* ═══════════════════════════════════════
-   QUESTION BANK (loaded from questions.json)
+   QUESTION BANK
 ═══════════════════════════════════════ */
 let QUESTION_BANK = [];
 let BANK_USED_IDS = new Set();
@@ -744,7 +955,6 @@ async function loadQuestionBank(){
     const resp = await fetch('questions.json');
     if(!resp.ok) throw new Error('Failed to load');
     QUESTION_BANK = await resp.json();
-    // Shuffle the bank
     for(let i = QUESTION_BANK.length - 1; i > 0; i--){
       const j = Math.floor(Math.random() * (i + 1));
       [QUESTION_BANK[i], QUESTION_BANK[j]] = [QUESTION_BANK[j], QUESTION_BANK[i]];
@@ -757,10 +967,7 @@ async function loadQuestionBank(){
 }
 
 function pickQuestions(count){
-  // If we've used most questions, reset the used set
-  if(BANK_USED_IDS.size > QUESTION_BANK.length - count){
-    BANK_USED_IDS.clear();
-  }
+  if(BANK_USED_IDS.size > QUESTION_BANK.length - count) BANK_USED_IDS.clear();
   const available = QUESTION_BANK.filter(q => !BANK_USED_IDS.has(q.id));
   const picked = [];
   for(let i = available.length - 1; i > 0 && picked.length < count; i--){
@@ -769,25 +976,19 @@ function pickQuestions(count){
     picked.push(available[i]);
     BANK_USED_IDS.add(available[i].id);
   }
-  // Fill remaining if needed
   while(picked.length < count && QUESTION_BANK.length > 0){
     const q = QUESTION_BANK[Math.floor(Math.random() * QUESTION_BANK.length)];
-    if(!picked.find(p => p.id === q.id)){
-      picked.push(q);
-      BANK_USED_IDS.add(q.id);
-    }
+    if(!picked.find(p => p.id === q.id)){ picked.push(q); BANK_USED_IDS.add(q.id); }
   }
   return picked;
 }
 
 async function generateQs(){
   if(S.isGenning) return;
-  S.isGenning = true;
-  S.genError = false;
+  S.isGenning = true; S.genError = false;
   const loaded = await loadQuestionBank();
   if(!loaded || QUESTION_BANK.length === 0){
-    S.isGenning = false;
-    S.genError = true;
+    S.isGenning = false; S.genError = true;
     if(S.screen==='solo'||S.screen==='mpLobby') showScreen(S.screen);
     return;
   }
@@ -808,9 +1009,7 @@ function soloChoose(opt){
   S.myAnswer=opt; S.showResult=true;
   S.account.questionsAnswered++; saveAcc(S.account);
   spawnConfetti(opt===1?cssVar('a1'):cssVar('a2'));
-  showScreen('solo');
-  // Always pre-fetch next batch in background while reading result
-  generateQs();
+  showScreen('solo'); generateQs();
 }
 function soloNext(){
   S.myAnswer=null; S.showResult=false; S.qIdx++;
@@ -842,7 +1041,7 @@ function updateChatFab(){
   const wrap=document.getElementById('chat-fab-wrap');
   if(!wrap)return;
   if(MP_SCREENS.includes(S.screen)){
-    wrap.innerHTML=`<button onclick="toggleChat()" title="Chat">
+    wrap.innerHTML=`<button onclick="toggleChat()" title="Chat" style="position:relative">
       💬
       ${S.unread>0?`<div id="chat-badge" style="position:absolute;top:-4px;right:-4px;background:#ff4d6d;color:#fff;font-size:.6rem;font-weight:800;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);pointer-events:none">${S.unread}</div>`:''}
     </button>`;
@@ -855,7 +1054,6 @@ function renderChatPanel(){
   const panel=document.getElementById('chat-panel-el');
   if(!panel)return;
   if(!S.chatOpen){panel.innerHTML='';return;}
-  const now=new Date();
   const fmt=d=>{const h=d.getHours(),m=String(d.getMinutes()).padStart(2,'0');return `${h%12||12}:${m}${h>=12?'pm':'am'}`;}
   const msgs=S.chatMsgs.length===0
     ?'<div class="msg-sys">No messages yet… say hi! 👋</div>'
@@ -928,11 +1126,43 @@ function startHost(isRetry){
     S.questions=[]; S.qIdx=0; S.myAnswer=null; S.genError=false;
   }
   if(S.peer){try{S.peer.destroy();}catch(e){} S.peer=null;}
-  S.peer=new Peer(genRoomCode(),{debug:0,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});
+
+  // FIX: Use explicit PeerJS config with multiple STUN servers
+  // and force a fresh peer each time to avoid stale ICE state
+  const peerConfig={
+    debug:0,
+    config:{
+      iceServers:[
+        {urls:'stun:stun.l.google.com:19302'},
+        {urls:'stun:stun1.l.google.com:19302'},
+        {urls:'stun:stun2.l.google.com:19302'},
+      ],
+      iceTransportPolicy:'all',
+      iceCandidatePoolSize:10,
+    }
+  };
+
+  S.peer=new Peer(genRoomCode(),peerConfig);
   S.peer.on('open',id=>{
     S.myPeerId=id; S.roomId=id;
     const me={id,name:S.account.username,emoji:ICONS[S.account.iconId].e};
     S.hostPlayers=[me]; S.mpPlayers=[me];
+    // Register in public server listing if public
+    if(S._lobbyPrivacy==='public'){
+      writePubServer({
+        code:id,
+        host:S.account.username,
+        hostEmoji:ICONS[S.account.iconId].e,
+        players:1,
+        privacy:'public',
+        hasPassword:!!(S._lobbyPassword),
+        name:S.account.username,
+        created:Date.now(),
+      });
+      // Heartbeat every 30s
+      if(S._heartbeatInt)clearInterval(S._heartbeatInt);
+      S._heartbeatInt=setInterval(heartbeatPubServer,30000);
+    }
     showScreen('mpLobby'); generateQs();
   });
   S.peer.on('connection',conn=>{
@@ -952,11 +1182,18 @@ function setupHostConn(conn){
   });
   conn.on('data',msg=>{
     if(msg.type==='join'){
+      // Password check
+      if(S._lobbyPassword && msg.password!==S._lobbyPassword){
+        conn.send({type:'error',msg:'Wrong password! 🔑'});
+        setTimeout(()=>conn.close(),500);
+        return;
+      }
       if(!S.hostPlayers.find(p=>p.id===conn.peer)){
         const np={id:conn.peer,name:msg.name,emoji:msg.emoji};
         S.hostPlayers.push(np); S.mpPlayers=[...S.hostPlayers];
         broadcast({type:'players',players:S.hostPlayers});
         addChatMsg({sys:true,emoji:'🔔',text:msg.name+' joined the room!',mine:false});
+        heartbeatPubServer();
         if(S.screen==='mpLobby')showScreen('mpLobby');
       }
     }
@@ -968,7 +1205,6 @@ function setupHostConn(conn){
       if(cnt>=S.hostPlayers.length)setTimeout(doReveal,700);
     }
     if(msg.type==='chat'){broadcast(msg);addChatMsg({...msg,mine:false});}
-
   });
   conn.on('close',()=>{
     S.conns=S.conns.filter(c=>c!==conn);
@@ -978,25 +1214,18 @@ function setupHostConn(conn){
       S.hostPlayers=S.hostPlayers.filter(p=>p.id!==conn.peer);
       S.mpPlayers=[...S.hostPlayers];
       broadcast({type:'players',players:S.hostPlayers});
-      // If mid-game, check if everyone remaining has already answered
+      heartbeatPubServer();
       if(S.screen==='mpGame'||S.screen==='mpReveal'){
         const answeredRemaining=S.hostPlayers.filter(p=>S.hostAnswers[p.id]!==undefined).length;
         const total=S.hostPlayers.length;
-        if(total>0&&answeredRemaining>=total){
-          setTimeout(doReveal,700);
-        } else if(total===0){
-          showToast('All players left. Ending game.');
-          showScreen('mpGameover');
-        } else {
-          // update answer bar for remaining players
+        if(total>0&&answeredRemaining>=total){setTimeout(doReveal,700);}
+        else if(total===0){showToast('All players left. Ending game.');showScreen('mpGameover');}
+        else{
           const cnt=Object.keys(S.hostAnswers).filter(id=>S.hostPlayers.find(p=>p.id===id)).length;
-          broadcast({type:'ansCount',count:cnt});
-          updateAnsBar(cnt);
-          if(S.screen==='mpGame') showScreen('mpGame');
+          broadcast({type:'ansCount',count:cnt}); updateAnsBar(cnt);
+          if(S.screen==='mpGame')showScreen('mpGame');
         }
-      } else if(S.screen==='mpLobby'){
-        showScreen('mpLobby');
-      }
+      } else if(S.screen==='mpLobby'){showScreen('mpLobby');}
     }
   });
   conn.on('error',()=>{S.conns=S.conns.filter(c=>c!==conn);});
@@ -1005,7 +1234,6 @@ function setupHostConn(conn){
 function broadcast(msg){S.conns.forEach(c=>{if(c.open)c.send(msg);});}
 
 function doReveal(){
-  // Filter answers to only players still in the game
   const currentAnswers={};
   S.hostPlayers.forEach(p=>{if(S.hostAnswers[p.id]!==undefined)currentAnswers[p.id]=S.hostAnswers[p.id];});
   const revData={answers:currentAnswers,players:[...S.hostPlayers],q:S.questions[S.qIdx]};
@@ -1022,13 +1250,13 @@ function doReveal(){
   showScreen('mpReveal');
 }
 
-/* ═══════════════════════════════════════
-   AI BOT
-═══════════════════════════════════════ */
 function hostStartGame(){
   if(S.mpPlayers.length<2){updateLobbyStatus('Need at least 2 players!');return;}
   S.hostAnswers={}; S.mpAnsweredCount=0; S.myAnswer=null; S.qIdx=0;
   broadcast({type:'startGame',questions:S.questions,qIdx:0});
+  // Remove from public listing once game starts
+  removePubServer(S.roomId);
+  if(S._heartbeatInt){clearInterval(S._heartbeatInt);S._heartbeatInt=null;}
   showScreen('mpGame');
 }
 
@@ -1043,11 +1271,16 @@ function hostNextQ(){
 function hostEndGame(){
   broadcast({type:'gameover'});
   S.account.gamesPlayed++; saveAcc(S.account);
+  removePubServer(S.roomId);
+  if(S._heartbeatInt){clearInterval(S._heartbeatInt);S._heartbeatInt=null;}
   showScreen('mpGameover');
 }
 
 function backToMenu(){
   closeFlappy();
+  removePubServer(S.roomId);
+  if(S._heartbeatInt){clearInterval(S._heartbeatInt);S._heartbeatInt=null;}
+  if(S._serverPoll){clearInterval(S._serverPoll);S._serverPoll=null;}
   if(S.peer){try{S.peer.destroy();}catch(e){}} S.peer=null;
   S.conns=[]; S.hostConn=null; S.mpPlayers=[];
   showScreen('menu');
@@ -1056,26 +1289,41 @@ function backToMenu(){
 /* ═══════════════════════════════════════
    MULTIPLAYER CLIENT
 ═══════════════════════════════════════ */
-function joinRoom(){
+function joinRoom(code, password){
   if(!window.Peer){setMpErr('PeerJS loading, try again…');return;}
-  const code=(document.getElementById('join-code')?.value||'').trim().toUpperCase();
-  if(!code||code.length<4){setMpErr('Enter a valid room code.');return;}
+  const roomCode=code||(document.getElementById('join-code')?.value||'').trim().toUpperCase();
+  const pw=password||S.joinPassword||'';
+  if(!roomCode||roomCode.length<4){setMpErr('Enter a valid room code.');return;}
   setMpErr('Connecting…');
   S.mpPlayers=[]; S.chatMsgs=[]; S.unread=0;
   S.questions=[]; S.qIdx=0; S.myAnswer=null; S.mpReveal=null;
   if(S.peer){try{S.peer.destroy();}catch(e){}}
-  S.peer=new Peer(null,{debug:0,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});
+
+  // FIX: Same robust ICE config for clients
+  const peerConfig={
+    debug:0,
+    config:{
+      iceServers:[
+        {urls:'stun:stun.l.google.com:19302'},
+        {urls:'stun:stun1.l.google.com:19302'},
+        {urls:'stun:stun2.l.google.com:19302'},
+      ],
+      iceTransportPolicy:'all',
+      iceCandidatePoolSize:10,
+    }
+  };
+
+  S.peer=new Peer(null,peerConfig);
   let joinTimeout;
   S.peer.on('open',id=>{
-    S.myPeerId=id; S.roomId=code;
-    const conn=S.peer.connect(code,{reliable:true});
+    S.myPeerId=id; S.roomId=roomCode;
+    const conn=S.peer.connect(roomCode,{reliable:true});
     S.hostConn=conn;
-    joinTimeout=setTimeout(()=>{if(S.screen!=='mpLobby')setMpErr('Timed out — check the room code and try again.');},8000);
+    joinTimeout=setTimeout(()=>{if(S.screen!=='mpLobby')setMpErr('Timed out — check the room code and try again.');},10000);
     conn.on('open',()=>{
       clearTimeout(joinTimeout);
-      conn.send({type:'join',name:S.account.username,emoji:ICONS[S.account.iconId].e});
-      // Share our score + full lb cache with host so it spreads to all players
-    setMpErr('');showScreen('mpLobby');
+      conn.send({type:'join',name:S.account.username,emoji:ICONS[S.account.iconId].e,password:pw});
+      setMpErr(''); showScreen('mpLobby');
     });
     conn.on('data',msg=>handleClientMsg(msg));
     conn.on('close',()=>showToast('Disconnected from host.'));
@@ -1110,8 +1358,12 @@ function handleClientMsg(msg){
   if(msg.type==='gameover'){S.account.gamesPlayed++;saveAcc(S.account);showScreen('mpGameover');}
   if(msg.type==='playAgain'){S.qIdx=0;S.myAnswer=null;S.questions=[];S.mpAnsweredCount=0;showScreen('mpLobby');}
   if(msg.type==='chat'){addChatMsg({...msg,mine:false});}
-
-  if(msg.type==='error'){setMpErr(msg.msg);}
+  if(msg.type==='error'){
+    showToast('❌ '+msg.msg);
+    setMpErr(msg.msg);
+    // If kicked (e.g. wrong password), go back
+    setTimeout(()=>{if(S.screen==='mpLobby')showScreen('servers');},2000);
+  }
 }
 
 /* ═══════════════════════════════════════
@@ -1121,9 +1373,7 @@ function mpChoose(opt){
   if(S.myAnswer!==null)return;
   S.myAnswer=opt; spawnConfetti(opt===1?cssVar('a1'):cssVar('a2'));
   S.account.questionsAnswered++; saveAcc(S.account);
-  showScreen('mpGame');
-  // Pre-fetch next questions in background while waiting for others
-  generateQs();
+  showScreen('mpGame'); generateQs();
   if(S.isHost){
     S.hostAnswers[S.myPeerId]=opt;
     const cnt=Object.keys(S.hostAnswers).length;
@@ -1165,7 +1415,7 @@ function showForgotPassword(){
     list.innerHTML='<div style="color:rgba(255,255,255,.4);font-size:.84rem;font-weight:600;padding:10px 0">No saved accounts on this device.</div>';
   } else {
     list.innerHTML=users.map(u=>`
-      <button onclick="forgotLogin('${escHtml(u.username)}')" style="width:100%;display:flex;align-items:center;gap:12px;padding:13px 15px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;cursor:pointer;transition:background .2s,border-color .2s;color:var(--txt,#fff);font-family:inherit"
+      <button onclick="forgotLogin('${escHtml(u.username)}')" style="width:100%;display:flex;align-items:center;gap:12px;padding:13px 15px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;cursor:pointer;color:var(--txt,#fff);font-family:inherit"
         onmouseover="this.style.background='rgba(0,194,255,.1)';this.style.borderColor='rgba(0,194,255,.3)'"
         onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
         <div style="font-size:1.8rem">${ICONS[u.iconId]?.e||'🦊'}</div>
@@ -1178,208 +1428,97 @@ function showForgotPassword(){
   }
   el.style.display='flex';
 }
-function hideForgotPassword(){
-  const el=document.getElementById('forgot-modal');
-  if(el) el.style.display='none';
-}
+function hideForgotPassword(){const el=document.getElementById('forgot-modal');if(el)el.style.display='none';}
 function forgotLogin(username){
   hideForgotPassword();
-  const acc=loadAcc(username);
-  if(!acc) return;
-  S.account=acc; applyTheme(acc.themeId);
-  S.questions=[];
+  const acc=loadAcc(username); if(!acc)return;
+  S.account=acc; applyTheme(acc.themeId); S.questions=[];
   showToast('Welcome back, '+username+'! 👋');
-  showScreen('menu'); generateQs();
-  _checkComebackPending();
+  showScreen('menu'); generateQs(); _checkComebackPending();
 }
 
 /* ═══════════════════════════════════════
    COMEBACK MODAL
 ═══════════════════════════════════════ */
-function showComebackModal(){
-  const el=document.getElementById('comeback-modal');
-  if(el) el.style.display='flex';
-}
-function hideComebackModal(){
-  const el=document.getElementById('comeback-modal');
-  if(el) el.style.display='none';
-}
+function showComebackModal(){const el=document.getElementById('comeback-modal');if(el)el.style.display='flex';}
+function hideComebackModal(){const el=document.getElementById('comeback-modal');if(el)el.style.display='none';}
 function claimComebackCoins(){
   localStorage.setItem('wyr_comeback_claimed','1');
   hideComebackModal();
-  if(S.account){
-    awardCoins(100,'comeback compensation 🙏');
-  } else {
-    // Store pending coins — award on next login
-    localStorage.setItem('wyr_comeback_pending','1');
-    showToast('Coins will be added when you log in! 🪙');
-  }
+  if(S.account){awardCoins(100,'comeback compensation 🙏');}
+  else{localStorage.setItem('wyr_comeback_pending','1');showToast('Coins will be added when you log in! 🪙');}
 }
 
 /* ═══════════════════════════════════════
-   FLAPPY BIRD MINI GAME
+   FLAPPY BIRD
 ═══════════════════════════════════════ */
 let FB={active:false,raf:null,canvas:null,ctx:null};
-
-function openFlappy(){
-  const ov=document.getElementById('flappy-overlay');
-  if(!ov)return;
-  ov.style.display='flex';
-  FB.active=true;
-  _fbInit();
-}
-function closeFlappy(){
-  const ov=document.getElementById('flappy-overlay');
-  if(ov)ov.style.display='none';
-  FB.active=false;
-  if(FB.raf){cancelAnimationFrame(FB.raf);FB.raf=null;}
-}
+function openFlappy(){const ov=document.getElementById('flappy-overlay');if(!ov)return;ov.style.display='flex';FB.active=true;_fbInit();}
+function closeFlappy(){const ov=document.getElementById('flappy-overlay');if(ov)ov.style.display='none';FB.active=false;if(FB.raf){cancelAnimationFrame(FB.raf);FB.raf=null;}}
 function _fbInit(){
-  const canvas=document.getElementById('flappy-canvas');
-  if(!canvas)return;
-  FB.canvas=canvas; FB.ctx=canvas.getContext('2d');
-  // Input
+  const canvas=document.getElementById('flappy-canvas');if(!canvas)return;
+  FB.canvas=canvas;FB.ctx=canvas.getContext('2d');
   const jump=()=>{if(FB.state==='dead'){_fbReset();}else{FB.vy=-5.5;FB.state='playing';}};
-  canvas.onclick=jump;
-  canvas.ontouchstart=(e)=>{e.preventDefault();jump();};
-  // Only add keyboard once
-  if(!FB._keyBound){
-    document.addEventListener('keydown',e=>{if(e.code==='Space'&&FB.active){e.preventDefault();jump();}});
-    FB._keyBound=true;
-  }
+  canvas.onclick=jump;canvas.ontouchstart=(e)=>{e.preventDefault();jump();};
+  if(!FB._keyBound){document.addEventListener('keydown',e=>{if(e.code==='Space'&&FB.active){e.preventDefault();jump();}});FB._keyBound=true;}
   _fbReset();
 }
 function _fbReset(){
-  const W=320,H=420;
-  FB.W=W;FB.H=H;
-  FB.birdX=80;FB.birdY=H/2;FB.vy=0;
-  FB.gravity=0.22;FB.flapPower=-5.5;
-  FB.pipes=[];FB.pipeTimer=0;FB.pipeGap=145;FB.pipeWidth=52;FB.pipeSpeed=1.6;
+  FB.W=320;FB.H=420;FB.birdX=80;FB.birdY=FB.H/2;FB.vy=0;
+  FB.gravity=0.22;FB.flapPower=-5.5;FB.pipes=[];FB.pipeTimer=0;FB.pipeGap=145;FB.pipeWidth=52;FB.pipeSpeed=1.6;
   FB.score=0;FB.best=parseInt(localStorage.getItem('fb_best')||'0');
-  FB.state='waiting'; // waiting -> playing -> dead
-  FB.bgX=0;FB.groundX=0;
-  if(FB.raf)cancelAnimationFrame(FB.raf);
-  _fbLoop();
+  FB.state='waiting';FB.bgX=0;FB.groundX=0;
+  if(FB.raf)cancelAnimationFrame(FB.raf);_fbLoop();
 }
-function _fbLoop(){
-  if(!FB.active){return;}
-  FB.raf=requestAnimationFrame(_fbLoop);
-  _fbUpdate();
-  _fbDraw();
-}
+function _fbLoop(){if(!FB.active)return;FB.raf=requestAnimationFrame(_fbLoop);_fbUpdate();_fbDraw();}
 function _fbUpdate(){
   if(FB.state!=='playing')return;
-  // Bird physics
-  FB.vy+=FB.gravity;
-  FB.birdY+=FB.vy;
-  FB.bgX=(FB.bgX-0.5)%FB.W;
-  FB.groundX=(FB.groundX-FB.pipeSpeed*1.5)%48;
-  // Pipes
+  FB.vy+=FB.gravity;FB.birdY+=FB.vy;FB.bgX=(FB.bgX-0.5)%FB.W;FB.groundX=(FB.groundX-FB.pipeSpeed*1.5)%48;
   FB.pipeTimer++;
-  if(FB.pipeTimer>110){
-    FB.pipeTimer=0;
-    const minH=50,maxH=FB.H-FB.pipeGap-minH-60;
-    const topH=minH+Math.random()*maxH;
-    FB.pipes.push({x:FB.W+10,top:topH,scored:false});
-  }
-  for(let p of FB.pipes){
-    p.x-=FB.pipeSpeed;
-    if(!p.scored&&p.x+FB.pipeWidth<FB.birdX){p.scored=true;FB.score++;}
-  }
+  if(FB.pipeTimer>110){FB.pipeTimer=0;const minH=50,maxH=FB.H-FB.pipeGap-minH-60,topH=minH+Math.random()*maxH;FB.pipes.push({x:FB.W+10,top:topH,scored:false});}
+  for(let p of FB.pipes){p.x-=FB.pipeSpeed;if(!p.scored&&p.x+FB.pipeWidth<FB.birdX){p.scored=true;FB.score++;}}
   FB.pipes=FB.pipes.filter(p=>p.x>-FB.pipeWidth-10);
-  // Collisions
-  const bR=13; // bird radius
-  for(let p of FB.pipes){
-    const inX=FB.birdX+bR>p.x&&FB.birdX-bR<p.x+FB.pipeWidth;
-    if(inX&&(FB.birdY-bR<p.top||FB.birdY+bR>p.top+FB.pipeGap)){_fbDie();return;}
-  }
-  // Floor/ceiling
+  const bR=13;
+  for(let p of FB.pipes){const inX=FB.birdX+bR>p.x&&FB.birdX-bR<p.x+FB.pipeWidth;if(inX&&(FB.birdY-bR<p.top||FB.birdY+bR>p.top+FB.pipeGap)){_fbDie();return;}}
   if(FB.birdY+bR>FB.H-40){FB.birdY=FB.H-40-bR;_fbDie();return;}
   if(FB.birdY-bR<0){FB.birdY=bR;FB.vy=0;}
 }
-function _fbDie(){
-  FB.state='dead';
-  if(FB.score>FB.best){FB.best=FB.score;localStorage.setItem('fb_best',FB.score);}
-}
+function _fbDie(){FB.state='dead';if(FB.score>FB.best){FB.best=FB.score;localStorage.setItem('fb_best',FB.score);}}
 function _fbDraw(){
-  const {ctx:c,W,H}=FB;
-  // Sky gradient
-  const sky=c.createLinearGradient(0,0,0,H);
-  sky.addColorStop(0,'#0d0d2e');sky.addColorStop(1,'#1a1a3e');
+  const{ctx:c,W,H}=FB;
+  const sky=c.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#0d0d2e');sky.addColorStop(1,'#1a1a3e');
   c.fillStyle=sky;c.fillRect(0,0,W,H);
-  // Scrolling stars/clouds bg
   c.fillStyle='rgba(255,255,255,.06)';
-  for(let i=0;i<8;i++){
-    const sx=((FB.bgX*0.3+i*45)%W+W)%W;
-    c.beginPath();c.arc(sx,20+i*18,2,0,Math.PI*2);c.fill();
-  }
-  // Pipes
+  for(let i=0;i<8;i++){const sx=((FB.bgX*0.3+i*45)%W+W)%W;c.beginPath();c.arc(sx,20+i*18,2,0,Math.PI*2);c.fill();}
   for(let p of FB.pipes){
-    // Top pipe
-    const g1=c.createLinearGradient(p.x,0,p.x+FB.pipeWidth,0);
-    g1.addColorStop(0,'#1a6b3c');g1.addColorStop(0.4,'#2ecc71');g1.addColorStop(1,'#1a6b3c');
-    c.fillStyle=g1;
-    c.beginPath();c.roundRect(p.x,0,FB.pipeWidth,p.top-8,4);c.fill();
-    // Top cap
-    c.fillStyle='#27ae60';
-    c.beginPath();c.roundRect(p.x-5,p.top-24,FB.pipeWidth+10,20,6);c.fill();
-    // Bottom pipe
+    const g1=c.createLinearGradient(p.x,0,p.x+FB.pipeWidth,0);g1.addColorStop(0,'#1a6b3c');g1.addColorStop(0.4,'#2ecc71');g1.addColorStop(1,'#1a6b3c');
+    c.fillStyle=g1;c.beginPath();c.roundRect(p.x,0,FB.pipeWidth,p.top-8,4);c.fill();
+    c.fillStyle='#27ae60';c.beginPath();c.roundRect(p.x-5,p.top-24,FB.pipeWidth+10,20,6);c.fill();
     const botY=p.top+FB.pipeGap;
-    c.fillStyle=g1;
-    c.beginPath();c.roundRect(p.x,botY+8,FB.pipeWidth,H-botY-48,4);c.fill();
-    // Bottom cap
-    c.fillStyle='#27ae60';
-    c.beginPath();c.roundRect(p.x-5,botY+4,FB.pipeWidth+10,20,6);c.fill();
+    c.fillStyle=g1;c.beginPath();c.roundRect(p.x,botY+8,FB.pipeWidth,H-botY-48,4);c.fill();
+    c.fillStyle='#27ae60';c.beginPath();c.roundRect(p.x-5,botY+4,FB.pipeWidth+10,20,6);c.fill();
   }
-  // Ground
-  c.fillStyle='#2d5a1b';c.fillRect(0,H-40,W,40);
-  c.fillStyle='#3d7a26';c.fillRect(0,H-40,W,8);
-  // Ground tiles
-  c.fillStyle='#4a9030';
-  for(let i=0;i<8;i++){
-    const gx=((FB.groundX+i*48)%W+W)%W;
-    c.fillRect(gx,H-40,40,8);
-  }
-  // Bird
-  const bx=FB.birdX,by=FB.birdY;
-  const angle=Math.max(-0.5,Math.min(1.2,FB.vy*0.07));
+  c.fillStyle='#2d5a1b';c.fillRect(0,H-40,W,40);c.fillStyle='#3d7a26';c.fillRect(0,H-40,W,8);
+  c.fillStyle='#4a9030';for(let i=0;i<8;i++){const gx=((FB.groundX+i*48)%W+W)%W;c.fillRect(gx,H-40,40,8);}
+  const bx=FB.birdX,by=FB.birdY,angle=Math.max(-0.5,Math.min(1.2,FB.vy*0.07));
   c.save();c.translate(bx,by);c.rotate(angle);
-  // Body
-  c.fillStyle='#ffd60a';
-  c.beginPath();c.ellipse(0,0,14,11,0,0,Math.PI*2);c.fill();
-  // Wing
-  c.fillStyle='#ffaa00';
-  c.beginPath();c.ellipse(-4,3,8,5,FB.state==='playing'?Math.sin(Date.now()/80)*0.5:0.3,0,Math.PI*2);c.fill();
-  // Eye
+  c.fillStyle='#ffd60a';c.beginPath();c.ellipse(0,0,14,11,0,0,Math.PI*2);c.fill();
+  c.fillStyle='#ffaa00';c.beginPath();c.ellipse(-4,3,8,5,FB.state==='playing'?Math.sin(Date.now()/80)*0.5:0.3,0,Math.PI*2);c.fill();
   c.fillStyle='#fff';c.beginPath();c.arc(6,-3,4,0,Math.PI*2);c.fill();
   c.fillStyle='#1a1a2e';c.beginPath();c.arc(7,-3,2.2,0,Math.PI*2);c.fill();
   c.fillStyle='#fff';c.beginPath();c.arc(8,-4,0.8,0,Math.PI*2);c.fill();
-  // Beak
-  c.fillStyle='#ff6b35';
-  c.beginPath();c.moveTo(12,-1);c.lineTo(18,1);c.lineTo(12,3);c.closePath();c.fill();
+  c.fillStyle='#ff6b35';c.beginPath();c.moveTo(12,-1);c.lineTo(18,1);c.lineTo(12,3);c.closePath();c.fill();
   c.restore();
-  // Score
-  c.fillStyle='#fff';c.font='bold 22px Nunito,sans-serif';c.textAlign='center';
-  c.shadowColor='rgba(0,0,0,.8)';c.shadowBlur=6;
-  c.fillText(FB.score,W/2,44);c.shadowBlur=0;
-  // State overlays
+  c.fillStyle='#fff';c.font='bold 22px Nunito,sans-serif';c.textAlign='center';c.shadowColor='rgba(0,0,0,.8)';c.shadowBlur=6;c.fillText(FB.score,W/2,44);c.shadowBlur=0;
   if(FB.state==='waiting'){
-    c.fillStyle='rgba(0,0,0,.55)';c.fillRect(0,0,W,H);
-    c.fillStyle='#ffd60a';c.font='bold 26px Bangers,cursive';c.textAlign='center';
-    c.fillText('TAP TO START',W/2,H/2-16);
-    c.fillStyle='rgba(255,255,255,.5)';c.font='bold 14px Nunito,sans-serif';
-    c.fillText('Best: '+FB.best,W/2,H/2+16);
+    c.fillStyle='rgba(0,0,0,.55)';c.fillRect(0,0,W,H);c.fillStyle='#ffd60a';c.font='bold 26px Bangers,cursive';c.textAlign='center';c.fillText('TAP TO START',W/2,H/2-16);
+    c.fillStyle='rgba(255,255,255,.5)';c.font='bold 14px Nunito,sans-serif';c.fillText('Best: '+FB.best,W/2,H/2+16);
   }
   if(FB.state==='dead'){
-    c.fillStyle='rgba(0,0,0,.6)';c.fillRect(0,0,W,H);
-    c.fillStyle='#ff4d6d';c.font='bold 30px Bangers,cursive';c.textAlign='center';
-    c.fillText('DEAD 💀',W/2,H/2-38);
-    c.fillStyle='#ffd60a';c.font='bold 22px Bangers,cursive';
-    c.fillText('Score: '+FB.score,W/2,H/2);
-    c.fillStyle='rgba(255,255,255,.6)';c.font='bold 15px Nunito,sans-serif';
-    c.fillText('Best: '+FB.best,W/2,H/2+26);
-    c.fillStyle='#00c2ff';c.font='bold 16px Nunito,sans-serif';
-    c.fillText('Tap to play again',W/2,H/2+56);
+    c.fillStyle='rgba(0,0,0,.6)';c.fillRect(0,0,W,H);c.fillStyle='#ff4d6d';c.font='bold 30px Bangers,cursive';c.textAlign='center';c.fillText('DEAD 💀',W/2,H/2-38);
+    c.fillStyle='#ffd60a';c.font='bold 22px Bangers,cursive';c.fillText('Score: '+FB.score,W/2,H/2);
+    c.fillStyle='rgba(255,255,255,.6)';c.font='bold 15px Nunito,sans-serif';c.fillText('Best: '+FB.best,W/2,H/2+26);
+    c.fillStyle='#00c2ff';c.font='bold 16px Nunito,sans-serif';c.fillText('Tap to play again',W/2,H/2+56);
   }
 }
 
@@ -1388,43 +1527,43 @@ function _fbDraw(){
 ═══════════════════════════════════════ */
 applyTheme('void');
 showScreen('login');
-// Show comeback modal only once ever
 if(!localStorage.getItem('wyr_comeback_claimed')){
-  setTimeout(showComebackModal, 600);
+  setTimeout(showComebackModal,600);
 }
 </script>
-  <!-- FLAPPY BIRD MINI GAME -->
-  <div id="flappy-overlay">
-    <button id="flappy-close" onclick="closeFlappy()" title="Close">✕</button>
-    <div style="font-family:'Bangers',cursive;font-size:1.6rem;letter-spacing:2px;color:var(--a2)">🐦 FLAPPY WAIT</div>
-    <canvas id="flappy-canvas" width="320" height="420"></canvas>
-    <div id="flappy-hud">TAP / SPACE to flap · kills time while waiting</div>
-  </div>
 
-  <!-- FORGOT PASSWORD MODAL -->
-  <div id="forgot-modal" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px">
-    <div style="background:var(--bg,#0d0d1a);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:28px;max-width:380px;width:100%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;align-items:center;gap:14px;animation:fadeUp .3s ease">
-      <div style="font-size:2.4rem">🔑</div>
-      <div style="font-size:1.4rem;font-weight:900;color:var(--txt,#fff)">Forgot Password?</div>
-      <div style="font-size:.84rem;color:rgba(255,255,255,.5);font-weight:600;line-height:1.6">Your saved accounts on this device — tap one to log in without a password.</div>
-      <div id="forgot-accounts" style="width:100%;display:flex;flex-direction:column;gap:10px"></div>
-      <button onclick="hideForgotPassword()" style="width:100%;padding:13px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);font-weight:800;font-size:.88rem;border-radius:12px;cursor:pointer;margin-top:4px">Cancel</button>
-    </div>
-  </div>
+<!-- FLAPPY BIRD -->
+<div id="flappy-overlay">
+  <button id="flappy-close" onclick="closeFlappy()" title="Close">✕</button>
+  <div style="font-family:'Bangers',cursive;font-size:1.6rem;letter-spacing:2px;color:var(--a2)">🐦 FLAPPY WAIT</div>
+  <canvas id="flappy-canvas" width="320" height="420"></canvas>
+  <div id="flappy-hud">TAP / SPACE to flap · kills time while waiting</div>
+</div>
 
-  <!-- COMEBACK MODAL -->
-  <div id="comeback-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px">
-    <div style="background:var(--bg, #0d0d1a);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:32px 28px;max-width:380px;width:100%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;align-items:center;gap:16px;animation:fadeUp .35s ease">
-      <div style="font-size:3.2rem">🙏</div>
-      <div style="font-size:1.6rem;font-weight:900;color:var(--txt, #fff);line-height:1.2">Big sorry from Saeed</div>
-      <div style="font-size:.92rem;color:rgba(255,255,255,.55);font-weight:600;line-height:1.6">Sorry for the inconvenience but we are back! Have fun :D</div>
-      <button id="comeback-btn" onclick="claimComebackCoins()" style="width:100%;padding:16px;background:linear-gradient(135deg,var(--a3,#ffd60a),#ffaa00);color:#000;font-weight:900;font-size:1rem;border:none;border-radius:14px;cursor:pointer;margin-top:4px;transition:transform .12s,box-shadow .12s;box-shadow:0 4px 20px rgba(255,214,10,.35)"
-        onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 28px rgba(255,214,10,.5)'"
-        onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(255,214,10,.35)'">
-        🪙 Claim 100 Coins Compensation
-      </button>
-      <div style="font-size:.72rem;color:rgba(255,255,255,.25);font-weight:600">Only available once per device</div>
-    </div>
+<!-- FORGOT PASSWORD MODAL -->
+<div id="forgot-modal" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--bg,#0d0d1a);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:28px;max-width:380px;width:100%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;align-items:center;gap:14px;animation:fadeUp .3s ease">
+    <div style="font-size:2.4rem">🔑</div>
+    <div style="font-size:1.4rem;font-weight:900;color:var(--txt,#fff)">Forgot Password?</div>
+    <div style="font-size:.84rem;color:rgba(255,255,255,.5);font-weight:600;line-height:1.6">Your saved accounts on this device — tap one to log in without a password.</div>
+    <div id="forgot-accounts" style="width:100%;display:flex;flex-direction:column;gap:10px"></div>
+    <button onclick="hideForgotPassword()" style="width:100%;padding:13px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);font-weight:800;font-size:.88rem;border-radius:12px;cursor:pointer;margin-top:4px">Cancel</button>
   </div>
+</div>
+
+<!-- COMEBACK MODAL -->
+<div id="comeback-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--bg,#0d0d1a);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:32px 28px;max-width:380px;width:100%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;align-items:center;gap:16px;animation:fadeUp .35s ease">
+    <div style="font-size:3.2rem">🙏</div>
+    <div style="font-size:1.6rem;font-weight:900;color:var(--txt,#fff);line-height:1.2">Sorry!</div>
+    <div style="font-size:.92rem;color:rgba(255,255,255,.55);font-weight:600;line-height:1.6">Sorry for the inconvenience but we are back! Have fun :D</div>
+    <button onclick="claimComebackCoins()" style="width:100%;padding:16px;background:linear-gradient(135deg,var(--a3,#ffd60a),#ffaa00);color:#000;font-weight:900;font-size:1rem;border:none;border-radius:14px;cursor:pointer;margin-top:4px;transition:transform .12s,box-shadow .12s;box-shadow:0 4px 20px rgba(255,214,10,.35)"
+      onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 28px rgba(255,214,10,.5)'"
+      onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(255,214,10,.35)'">
+      🪙 Claim 100 Coins Compensation
+    </button>
+    <div style="font-size:.72rem;color:rgba(255,255,255,.25);font-weight:600">Only available once per device</div>
+  </div>
+</div>
 </body>
 </html>
