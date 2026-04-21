@@ -245,58 +245,104 @@ const FREE_ICONS = ["fox","frog","unicorn","panda","tiger","penguin"];
 
 /* ═══════════════════════════════════════
    SHARED SERVER STORAGE (cross-device)
-   Uses window.storage shared API so ALL
-   players on any device see the same list.
+   Uses JSONBlob.com free public API —
+   no auth, no signup, fully CORS-open.
+   Falls back to localStorage on errors.
 ═══════════════════════════════════════ */
-const SERVERS_STORAGE_KEY = 'pub_servers_v2';
+// This blob stores the public server list. It auto-creates on first use.
+const BLOB_KEY = 'wyr_blob_url_v2';
+let _blobUrl = localStorage.getItem(BLOB_KEY) || null;
+let _writeQueue = Promise.resolve();
+
+async function _ensureBlob(list) {
+  if (_blobUrl) return _blobUrl;
+  try {
+    const resp = await fetch('https://jsonblob.com/api/jsonBlob', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(list || [])
+    });
+    if (resp.ok) {
+      const url = resp.headers.get('Location') || resp.url;
+      _blobUrl = url;
+      localStorage.setItem(BLOB_KEY, url);
+      return url;
+    }
+  } catch(e) {}
+  return null;
+}
 
 async function readPubServers() {
+  const now = Date.now();
+  if (!_blobUrl) return _readLocalFallback();
   try {
-    const result = await window.storage.get(SERVERS_STORAGE_KEY, true);
-    if (!result) return [];
-    const list = JSON.parse(result.value);
-    const now = Date.now();
-    // Filter out stale entries (older than 2 minutes)
-    return list.filter(s => now - s.created < 120000);
+    const resp = await fetch(_blobUrl, { headers: { 'Accept': 'application/json' } });
+    if (!resp.ok) return _readLocalFallback();
+    const list = await resp.json();
+    return (Array.isArray(list) ? list : []).filter(s => now - s.created < 120000);
   } catch(e) {
-    return [];
+    return _readLocalFallback();
   }
+}
+
+function _readLocalFallback() {
+  try {
+    const raw = localStorage.getItem('wyr_pub_servers');
+    if (!raw) return [];
+    return JSON.parse(raw).filter(s => Date.now() - s.created < 120000);
+  } catch(e) { return []; }
+}
+
+async function _writePubServerList(list) {
+  list = list.filter(s => Date.now() - s.created < 120000);
+  localStorage.setItem('wyr_pub_servers', JSON.stringify(list));
+  try {
+    const url = _blobUrl || await _ensureBlob(list);
+    if (!url) return;
+    await fetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(list)
+    });
+  } catch(e) {}
 }
 
 async function writePubServer(entry) {
-  try {
-    let list = await readPubServers();
-    // Remove old entry for same code if exists
-    list = list.filter(s => s.code !== entry.code);
-    list.push(entry);
-    // Also prune stale
-    const now = Date.now();
-    list = list.filter(s => now - s.created < 120000);
-    await window.storage.set(SERVERS_STORAGE_KEY, JSON.stringify(list), true);
-  } catch(e) {
-    console.warn('writePubServer failed:', e);
-  }
+  _writeQueue = _writeQueue.then(async () => {
+    try {
+      await _ensureBlob([]);
+      let list = await readPubServers();
+      list = list.filter(s => s.code !== entry.code);
+      list.push(entry);
+      await _writePubServerList(list);
+    } catch(e) { console.warn('writePubServer failed:', e); }
+  });
+  return _writeQueue;
 }
 
 async function removePubServerAsync(code) {
-  try {
-    let list = await readPubServers();
-    list = list.filter(s => s.code !== code);
-    await window.storage.set(SERVERS_STORAGE_KEY, JSON.stringify(list), true);
-  } catch(e) {}
+  _writeQueue = _writeQueue.then(async () => {
+    try {
+      let list = await readPubServers();
+      list = list.filter(s => s.code !== code);
+      await _writePubServerList(list);
+    } catch(e) {}
+  });
 }
 
 async function heartbeatPubServer() {
   if (!S.isHost || !S.roomId) return;
-  try {
-    let list = await readPubServers();
-    const idx = list.findIndex(s => s.code === S.roomId);
-    if (idx >= 0) {
-      list[idx].created = Date.now();
-      list[idx].players = S.hostPlayers.length;
-      await window.storage.set(SERVERS_STORAGE_KEY, JSON.stringify(list), true);
-    }
-  } catch(e) {}
+  _writeQueue = _writeQueue.then(async () => {
+    try {
+      let list = await readPubServers();
+      const idx = list.findIndex(s => s.code === S.roomId);
+      if (idx >= 0) {
+        list[idx].created = Date.now();
+        list[idx].players = S.hostPlayers.length;
+        await _writePubServerList(list);
+      }
+    } catch(e) {}
+  });
 }
 
 /* ═══════════════════════════════════════
@@ -752,18 +798,25 @@ function getTypeBadge(type){
 
 function buildMpLobby(){
   const a=S.account;
-  const privLabel=S._lobbyPrivacy==='public'?'🌐 Public Room':'🔒 Private Room';
+  const isPublic=S._lobbyPrivacy==='public';
+  const privLabel=isPublic?'🌐 Public Room':'🔒 Private Room';
   const pwLabel=S._lobbyPassword?'🔑 Password protected':'';
+  const roomTopCard=isPublic
+    ?`<div class="card" style="background:rgba(61,220,132,.07);border:1px solid rgba(61,220,132,.25);gap:6px">
+        <div style="text-align:center;font-size:1.05rem;font-weight:800;color:#3ddc84">🌐 Public Room</div>
+        <div style="text-align:center;font-size:.8rem;color:var(--mut);font-weight:600">Listed in the public server browser — players can find and join directly.${pwLabel?' · '+pwLabel:''}</div>
+       </div>`
+    :`<div class="card">
+        <div class="lbl">Room Code — tap to copy</div>
+        <div class="room-code" onclick="copyCode()">${S.roomId}</div>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:2px">
+          <span style="font-size:.7rem;color:var(--mut);font-weight:700">📋 Tap to copy · Share with friends</span>
+          ${S.isHost?`<span style="font-size:.7rem;font-weight:800;color:var(--a3)">${privLabel}${pwLabel?' · '+pwLabel:''}</span>`:''}
+        </div>
+       </div>`;
   return `
   <div class="title" style="font-size:3rem">Lobby</div>
-  <div class="card">
-    <div class="lbl">Room Code — tap to copy</div>
-    <div class="room-code" onclick="copyCode()">${S.roomId}</div>
-    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:2px">
-      <span style="font-size:.7rem;color:var(--mut);font-weight:700">📋 Tap to copy · Share with friends</span>
-      ${S.isHost?`<span style="font-size:.7rem;font-weight:800;color:${S._lobbyPrivacy==='public'?'#3ddc84':'var(--a3)'}">${privLabel}${pwLabel?' · '+pwLabel:''}</span>`:''}
-    </div>
-  </div>
+  ${roomTopCard}
   <div class="card" style="gap:12px">
     <div class="row-between"><div class="sec">Players</div><div class="sec">${S.mpPlayers.length} joined</div></div>
     <div class="chips-wrap" id="lobby-players">
